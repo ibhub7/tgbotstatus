@@ -5,13 +5,25 @@ from database import add_bot, remove_bot
 def register_commands(bot: Client):
     @bot.on_message(filters.command("addbot") & filters.private)
     async def on_add(client, message):
-        match = re.search(r'"([^"]+)"\s+(https?://\S+)', message.text)
-        if match:
-            name, url = match.group(1).strip(), match.group(2).strip()
-            await add_bot(name, url)
-            await message.reply(f"✅ Monitoring started for: **{name}**")
-        else:
-            await message.reply("Usage: `/addbot \"Bot Name\" URL`")
+        # Format: /addbot @username https://url.com
+        args = message.text.split()
+        if len(args) < 3:
+            return await message.reply("❌ **Usage:** `/addbot @BotUsername https://your-link.com`")
+
+        username = args[1].replace("@", "")
+        url = args[2]
+
+        try:
+            # Telegram se Bot ka asli naam fetch karna
+            target_bot = await client.get_users(username)
+            full_name = target_bot.first_name
+            
+            # Database mein save karna (Username bhi save karenge link ke liye)
+            await add_bot(full_name, url, username) 
+            await message.reply(f"✅ **Monitoring started!**\n🤖 Bot: [{full_name}](telegram.me/{username})\n🔗 URL: `{url}`")
+        
+        except Exception as e:
+            await message.reply(f"❌ **Error:** Username invalid hai ya bot nahi mila.\n`{e}`")
 
     @bot.on_message(filters.command("removebot") & filters.private)
     async def on_remove(client, message):

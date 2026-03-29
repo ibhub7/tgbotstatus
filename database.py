@@ -4,10 +4,10 @@ from config import Config
 client = AsyncIOMotorClient(Config.MONGO_URI)
 db = client.status_db.bots
 
-async def add_bot(name, url):
+async def add_bot(name, url, username):
     await db.update_one(
-        {"name": name}, 
-        {"$set": {"url": url}}, 
+        {"username": username}, 
+        {"$set": {"name": name, "url": url, "username": username}}, 
         upsert=True
     )
 

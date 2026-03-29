@@ -6,40 +6,136 @@
     <title>Monitor Dashboard Pro</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --neon-g: #22c55e; --neon-r: #ef4444; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; text-align: center; }
-        .header { margin-bottom: 40px; padding: 20px; border-bottom: 1px solid #334155; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .bot-card { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-top: 4px solid var(--neon-g); transition: 0.3s; }
-        .bot-card.offline { border-top-color: var(--neon-r); opacity: 0.8; }
-        .status-dot { height: 12px; width: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        .Online { background-color: var(--neon-g); box-shadow: 0 0 10px var(--neon-g); }
-        .Offline { background-color: var(--neon-r); box-shadow: 0 0 10px var(--neon-r); }
-        .retry-text { font-size: 12px; color: #94a3b8; }
+        :root { 
+            --bg: #0f172a; 
+            --card: #1e293b; 
+            --neon-g: #22c55e; 
+            --neon-r: #ef4444; 
+            --text-main: #f8fafc;
+        }
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 20px; 
+            text-align: center; 
+        }
+        .header { 
+            margin-bottom: 40px; 
+            padding: 20px; 
+            border-bottom: 1px solid #334155; 
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 0 0 20px 20px;
+        }
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 25px; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .bot-card { 
+            background: var(--card); 
+            padding: 25px; 
+            border-radius: 18px; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); 
+            border-top: 4px solid var(--neon-g); 
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .bot-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px -10px rgba(0,0,0,0.5);
+        }
+        .bot-card.offline { border-top-color: var(--neon-r); }
+        
+        /* Hyperlink Styling */
+        .bot-link {
+            color: var(--text-main);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .bot-link:hover {
+            color: var(--neon-g);
+        }
+        .offline .bot-link:hover {
+            color: var(--neon-r);
+        }
+
+        .status-container {
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            margin: 15px 0;
+            background: rgba(15, 23, 42, 0.4);
+            padding: 8px;
+            border-radius: 10px;
+        }
+        .status-dot { 
+            height: 10px; 
+            width: 10px; 
+            border-radius: 50%; 
+            display: inline-block; 
+            margin-right: 10px; 
+        }
+        .Online { 
+            background-color: var(--neon-g); 
+            box-shadow: 0 0 12px var(--neon-g); 
+        }
+        .Offline { 
+            background-color: var(--neon-r); 
+            box-shadow: 0 0 12px var(--neon-r); 
+        }
+        .timer-info { 
+            font-size: 13px; 
+            color: #94a3b8; 
+            margin-top: 10px;
+        }
+        #countdown { font-weight: bold; color: var(--neon-g); }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🌐 Monitor <span style="color:var(--neon-g)">Pro</span></h1>
-        <p id="update-time">Last Sync: {{ time }} IST</p>
+        <p id="update-time">📅 {{ date }} | ⏰ Last Sync: <b>{{ time }} IST</b></p>
     </div>
+
     <div class="grid" id="bot-grid">
         {% for bot in bots %}
         <div class="bot-card {{ 'offline' if 'Offline' in bot.status else '' }}">
-            <h2 style="margin:0 0 10px 0">🤖 {{ bot.name }}</h2>
-            <div style="display: flex; align-items: center; justify-content: center;">
+            <h2 style="margin:0 0 5px 0">
+                <a href="https://t.me/{{ bot.username }}" target="_blank" class="bot-link">
+                    🤖 {{ bot.name }}
+                </a>
+            </h2>
+            
+            <div class="status-container">
                 <span class="status-dot {{ 'Online' if 'Online' in bot.status else 'Offline' }}"></span>
-                <span style="font-weight:bold">{{ bot.status }}</span>
+                <span style="font-weight:bold; letter-spacing: 0.5px;">{{ bot.status }}</span>
             </div>
-            <p class="retry-text">Next check in: <span class="timer">--</span>s</p>
+            
+            <p class="timer-info">Auto-refreshing in <span id="countdown">30</span>s</p>
         </div>
         {% endfor %}
     </div>
 
     <script>
-        setInterval(function() {
-            location.reload(); // Simple auto-refresh every 30s
-        }, 30000);
+        // Real-time Countdown Script
+        let timeLeft = 30;
+        const countdownElement = document.getElementById('countdown');
+
+        const timer = setInterval(() => {
+            if(timeLeft <= 0) {
+                clearInterval(timer);
+                location.reload();
+            } else {
+                // Dashboard par saare timers update karein
+                document.querySelectorAll('#countdown').forEach(el => {
+                    el.innerText = timeLeft;
+                });
+            }
+            timeLeft -= 1;
+        }, 1000);
     </script>
 </body>
 </html>
