@@ -10,9 +10,9 @@ from pyrogram import Client
 from pyrogram.errors import MessageNotModified
 
 from config import Config
-from database import get_all_bots, db  # db import kiya status update ke liye
+from database import get_all_bots, db 
 from plugins.commands import register_commands
-from plugins.routes import router as web_router # Dashboard router
+from plugins.routes import router as web_router 
 
 # Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -28,9 +28,10 @@ bot = Client(
 register_commands(bot)
 
 async def check_bots_loop():
-    """Background task for monitoring."""
-    # Bot start lifespan handle karega, yahan double start ki zaroorat nahi
+    """Background task for monitoring with Retry & Alerts."""
     IST = pytz.timezone(Config.TIME_ZONE)
+    # Browser headers taaki pings block na hon
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) MonitorBot/1.0'}
     
     while True:
         now_ist = datetime.now(IST).strftime('%H:%M:%S')
@@ -42,18 +43,37 @@ async def check_bots_loop():
         
         async for target in await get_all_bots():
             name = target.get('name')
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(target['url'], timeout=15) as resp:
-                        web_status = "✅ Online" if resp.status == 200 else f"⚠️ Code {resp.status}"
-                
-                # Database mein status update (Dashboard ke liye)
-                await db.update_one({"name": name}, {"$set": {"status": web_status}})
-                status_text += f"🤖 **{name}**\n└ Status: {web_status}\n\n"
-                
-            except Exception:
-                await db.update_one({"name": name}, {"$set": {"status": "❌ Offline"}})
-                status_text += f"🤖 **{name}**\n└ Status: ❌ Offline\n\n"
+            url = target.get('url')
+            # Pichla status check karne ke liye (Alerts ke liye zaroori hai)
+            prev_status = target.get('status', '✅ Online')
+            
+            web_status = "❌ Offline" 
+            
+            # --- FEATURE: RETRY LOGIC (2 baar check karega) ---
+            for attempt in range(2):
+                try:
+                    async with aiohttp.ClientSession(headers=headers) as session:
+                        async with session.get(url, timeout=15) as resp:
+                            if resp.status == 200:
+                                web_status = "✅ Online"
+                                break 
+                except Exception:
+                    if attempt == 0: 
+                        await asyncio.sleep(10) # 10 sec wait before 2nd try
+            
+            # --- FEATURE: OWNER ALERTS (Jab Online se Offline ho) ---
+            if "Offline" in web_status and "Online" in prev_status:
+                try:
+                    await bot.send_message(
+                        Config.OWNER_ID, 
+                        f"⚠️ **ALERT: {name} is DOWN!**\n⏰ Time: `{now_ist} IST`"
+                    )
+                except Exception as e:
+                    logger.error(f"Alert failed for {name}: {e}")
+
+            # Database aur Channel text update
+            await db.update_one({"name": name}, {"$set": {"status": web_status}})
+            status_text += f"🤖 **{name}**\n└ Status: {web_status}\n\n"
 
         status_text += f"🔄 _Next update in {Config.CHECK_INTERVAL // 60} minutes..._"
 
@@ -69,16 +89,10 @@ async def check_bots_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Start the Bot Client
     await bot.start()
-    
-    # 2. Start the Background Monitoring Task
     monitor_task = asyncio.create_task(check_bots_loop())
-    
-    # 3. Stability check delay
     await asyncio.sleep(2) 
     
-    # 4. DM to Owner
     try:
         IST = pytz.timezone(Config.TIME_ZONE)
         now_ist = datetime.now(IST).strftime('%H:%M:%S')
@@ -93,13 +107,8 @@ async def lifespan(app: FastAPI):
         logger.error(f"Owner DM failed: {e}")
 
     yield
-    
-    # Cleanup
     monitor_task.cancel()
     await bot.stop()
 
-# FastAPI Initialization
 app = FastAPI(lifespan=lifespan)
-
-# Dashboard Routes ko include kiya
 app.include_router(web_router)

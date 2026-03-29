@@ -1,29 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Bot Monitor Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Dashboard Pro</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #121212; color: white; text-align: center; }
-        .container { margin-top: 50px; }
-        .bot-card { background: #1e1e1e; padding: 15px; margin: 10px auto; width: 300px; border-radius: 10px; border-left: 5px solid #00ff00; }
-        .offline { border-left-color: #ff0000; }
-        .status { font-weight: bold; }
-        .Online { color: #00ff00; }
-        .Offline { color: #ff4444; }
+        :root { --bg: #0f172a; --card: #1e293b; --neon-g: #22c55e; --neon-r: #ef4444; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; text-align: center; }
+        .header { margin-bottom: 40px; padding: 20px; border-bottom: 1px solid #334155; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .bot-card { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-top: 4px solid var(--neon-g); transition: 0.3s; }
+        .bot-card.offline { border-top-color: var(--neon-r); opacity: 0.8; }
+        .status-dot { height: 12px; width: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .Online { background-color: var(--neon-g); box-shadow: 0 0 10px var(--neon-g); }
+        .Offline { background-color: var(--neon-r); box-shadow: 0 0 10px var(--neon-r); }
+        .retry-text { font-size: 12px; color: #94a3b8; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🌐 Live Bot Monitor</h1>
-        <p>Last Updated: {{ time }}</p>
-        <hr style="width: 50%; border: 0.5px solid #333;">
-        
+    <div class="header">
+        <h1>🌐 Monitor <span style="color:var(--neon-g)">Pro</span></h1>
+        <p id="update-time">Last Sync: {{ time }} IST</p>
+    </div>
+    <div class="grid" id="bot-grid">
         {% for bot in bots %}
         <div class="bot-card {{ 'offline' if 'Offline' in bot.status else '' }}">
-            <h3>🤖 {{ bot.name }}</h3>
-            <p class="status">Status: <span class="{{ 'Online' if 'Online' in bot.status else 'Offline' }}">{{ bot.status }}</span></p>
+            <h2 style="margin:0 0 10px 0">🤖 {{ bot.name }}</h2>
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <span class="status-dot {{ 'Online' if 'Online' in bot.status else 'Offline' }}"></span>
+                <span style="font-weight:bold">{{ bot.status }}</span>
+            </div>
+            <p class="retry-text">Next check in: <span class="timer">--</span>s</p>
         </div>
         {% endfor %}
     </div>
+
+    <script>
+        setInterval(function() {
+            location.reload(); // Simple auto-refresh every 30s
+        }, 30000);
+    </script>
 </body>
 </html>
