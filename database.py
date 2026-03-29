@@ -1,18 +1,16 @@
 import motor.motor_asyncio
 from config import Config
 
-# Connection Setup
 client = motor.motor_asyncio.AsyncIOMotorClient(Config.MONGO_URI)
 db = client.status_db
 
 # Collections
 bots_col = db.mpbots
-users_col = db.users_settings
+users_settings = db.users_settings
+registered_users = db.registered_users # For Broadcast
 
 # --- BOTS MANAGEMENT ---
-
 async def add_bot(user_id, name, url, username):
-    """Bot ko specific user_id ke under save karne ke liye"""
     await bots_col.update_one(
         {"user_id": user_id, "name": name}, 
         {"$set": {
@@ -26,41 +24,24 @@ async def add_bot(user_id, name, url, username):
     )
 
 async def remove_bot(user_id, name):
-    """Sirf us user ka bot delete hoga"""
     await bots_col.delete_one({"user_id": user_id, "name": name})
 
 async def get_user_bots(user_id):
-    """Dashboard ke liye sirf 1 user ke bots nikalna"""
     return bots_col.find({"user_id": user_id})
 
-async def get_all_monitored_bots():
-    """Global loop ke liye saare bots fetch karna"""
-    return bots_col.find({})
+# --- USER SETTINGS & BROADCAST ---
+async def add_user(user_id):
+    """Save user for broadcast when they /start"""
+    await registered_users.update_one({"user_id": user_id}, {"$set": {"user_id": user_id}}, upsert=True)
 
-# --- USER SETTINGS & PRODUCTION LOGIC ---
+async def get_all_users():
+    return registered_users.find({})
 
-async def update_user_settings(user_id, interval=300, post_link=None):
-    """
-    User ki settings update karna:
-    - interval: seconds mein (120 = 2min, 300 = 5min)
-    - post_link: Telegram channel ka message link jahan status dikhega
-    """
-    update_data = {"user_id": user_id}
-    if interval:
-        update_data["interval"] = interval
-    if post_link:
-        update_data["post_link"] = post_link
-
-    await users_col.update_one(
-        {"user_id": user_id},
-        {"$set": update_data},
-        upsert=True
-    )
+async def update_user_settings(user_id, interval=None, post_link=None):
+    data = {}
+    if interval: data["interval"] = interval
+    if post_link: data["post_link"] = post_link
+    await users_settings.update_one({"user_id": user_id}, {"$set": data}, upsert=True)
 
 async def get_user_config(user_id):
-    """User ka interval aur post_link fetch karne ke liye"""
-    return await users_col.find_one({"user_id": user_id})
-
-async def get_all_users_with_settings():
-    """Loop ke liye saare users ki configurations nikalna"""
-    return users_col.find({})
+    return await users_settings.find_one({"user_id": user_id})
