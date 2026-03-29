@@ -17,3 +17,4 @@ A professional status monitor that pings your bots hosted on Koyeb/Render and up
 2. Get your `API_ID` and `API_HASH` from my.telegram.org.
 3. Deploy to Koyeb using the provided `Dockerfile`.
 4. Set all Environment Variables in the Koyeb dashboard.
+# Done for owner
