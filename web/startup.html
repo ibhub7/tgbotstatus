@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor Dashboard Pro</title>
+    <title>Monitor Dashboard Pro | {{ user_id }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
@@ -49,7 +49,6 @@
             overflow: hidden;
             transition: all 0.3s ease;
         }
-        /* Top accent border */
         .bot-card::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
             background: var(--neon-g);
@@ -85,7 +84,6 @@
         .refresh-tag { font-size: 12px; color: var(--text-dim); margin-top: 15px; }
         #countdown { color: var(--neon-g); font-weight: bold; }
 
-        /* Empty State */
         .empty-msg { grid-column: 1/-1; padding: 50px; color: var(--text-dim); }
     </style>
 </head>
@@ -93,8 +91,9 @@
     <div class="header">
         <h1>🌐 Monitor <span style="color:var(--neon-g)">Dashboard</span></h1>
         <p style="color:var(--text-dim); margin-top:10px;">
-            📅 {{ date }} | ⏰ Sync: <b style="color:white">{{ time }}</b>
+            📅 {{ date }} | ⏰ Last Sync: <b style="color:white">{{ time }}</b>
         </p>
+        <p style="font-size: 12px; opacity: 0.6;">User ID: {{ user_id }}</p>
     </div>
 
     <div class="grid" id="bot-grid">
@@ -112,22 +111,26 @@
                     </span>
                 </div>
                 
-                <p class="refresh-tag">Next update in <span id="countdown">30</span>s</p>
+                <p class="refresh-tag">Auto-refresh in <span id="countdown">{{ refresh }}</span>s</p>
             </div>
             {% endfor %}
         {% else %}
             <div class="empty-msg">
                 <h3>🚫 No Bots Found</h3>
-                <p>Add bots using <code>/addbot</code> in Telegram to see them here.</p>
+                <p>Telegram par <code>/addbot</code> use karke monitor shuru karein.</p>
             </div>
         {% endif %}
     </div>
 
     <script>
-        let timeLeft = 30;
-        setInterval(() => {
+        // Routes.py se aane wala dynamic interval
+        let refreshSeconds = {{ refresh }}; 
+        let timeLeft = refreshSeconds;
+
+        const timer = setInterval(() => {
             if(timeLeft <= 0) {
-                location.reload(); // Hard refresh to get new Jinja data
+                clearInterval(timer);
+                location.reload(); 
             } else {
                 document.querySelectorAll('#countdown').forEach(el => {
                     el.innerText = timeLeft;
