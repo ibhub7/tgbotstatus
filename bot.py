@@ -11,21 +11,22 @@ from pyrogram.errors import MessageNotModified
 
 from config import Config
 from database import get_all_bots, db 
-from plugins.commands import register_commands
+# register_commands hata diya kyunki ab auto-load use ho raha hai
 from plugins.routes import router as web_router 
 
-# Logging
+# Logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("MonitorBot")
 
+# --- CLIENT INITIALIZATION WITH AUTO-LOAD ---
 bot = Client(
     "MonitorBot", 
     api_id=Config.API_ID, 
     api_hash=Config.API_HASH, 
-    bot_token=Config.BOT_TOKEN
+    bot_token=Config.BOT_TOKEN,
+    plugins=dict(root="plugins"), # Ye line saare @Client handlers ko load karegi
+    in_memory=True
 )
-
-register_commands(bot)
 
 async def check_bots_loop():
     """Background task for monitoring with HTML Hyperlinks."""
@@ -36,7 +37,6 @@ async def check_bots_loop():
         now_ist = datetime.now(IST).strftime('%H:%M:%S')
         date_ist = datetime.now(IST).strftime('%d %B %Y')
         
-        # HTML Format Header
         status_text = "🌐 <b>Live Bot Status Report</b>\n"
         status_text += f"📅 <b>Date:</b> <code>{date_ist}</code>\n"
         status_text += f"⏰ <b>Last Updated:</b> <code>{now_ist} (IST)</code>\n\n"
@@ -59,7 +59,6 @@ async def check_bots_loop():
                 except Exception:
                     if attempt == 0: await asyncio.sleep(10)
             
-            # Alert with HTML Link
             if "Offline" in web_status and "Online" in prev_status:
                 try:
                     await bot.send_message(
@@ -72,8 +71,6 @@ async def check_bots_loop():
                     logger.error(f"Alert failed: {e}")
 
             await db.update_one({"name": name}, {"$set": {"status": web_status}})
-            
-            # --- HTML HYPERLINK: <a href='...'>Name</a> ---
             status_text += f"🤖 <b><a href='https://t.me/{username}'>{name}</a></b>\n└ Status: {web_status}\n\n"
 
         status_text += f"🔄 <i>Next update in {Config.CHECK_INTERVAL // 60} minutes...</i>"
@@ -83,7 +80,7 @@ async def check_bots_loop():
                 Config.STATUS_CHANNEL_ID, 
                 Config.STATUS_MESSAGE_ID, 
                 status_text,
-                parse_mode=enums.ParseMode.HTML, # Mode Change to HTML
+                parse_mode=enums.ParseMode.HTML,
                 disable_web_page_preview=True
             )
             logger.info(f"Updated status message at {now_ist}")
@@ -96,6 +93,7 @@ async def check_bots_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Bot start hote hi background loop shuru
     await bot.start()
     monitor_task = asyncio.create_task(check_bots_loop())
     await asyncio.sleep(5) 
@@ -115,6 +113,7 @@ async def lifespan(app: FastAPI):
         logger.error(f"Owner DM failed: {e}")
 
     yield
+    # Shutdown logic
     monitor_task.cancel()
     await bot.stop()
 
