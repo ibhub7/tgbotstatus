@@ -8,7 +8,7 @@ from config import Config
 @Client.on_message(filters.command("start") & filters.private)
 async def start_cmd(client, message):
     # Apna dashboard URL yahan change karein
-    dashboard_url = "https://your-app-name.koyeb.app" 
+    dashboard_url = "https://infinity-monitor-bot-ug.koyeb.app" 
 
     text = (
         f"👋 <b>Hello {message.from_user.mention}!</b>\n\n"
@@ -124,5 +124,38 @@ async def list_bots(client, message):
     await msg.edit(
         response, 
         parse_mode=enums.ParseMode.HTML, 
+        disable_web_page_preview=True
+    )
+
+from pyrogram import Client, filters, enums
+
+@Client.on_message(filters.command("help") & filters.private)
+async def help_cmd(client, message):
+    """Bot ki saari commands aur unka use samjhane ke liye"""
+    
+    help_text = (
+        "✨ <b>Bot Monitor Pro - Help Menu</b> ✨\n\n"
+        
+        "🤖 <b>Monitoring Commands:</b>\n"
+        "• /addbot <code>@user https://url.com</code> - Naya bot add karein.\n"
+        "• /removebot <code>\"Bot Name\"</code> - Bot ko monitoring se hatayein.\n"
+        "• /list - Saare monitored bots ki live report dekhein.\n\n"
+        
+        "📂 <b>MongoDB Manager (Private Only):</b>\n"
+        "• /check <code>MONGO_URL</code> - Connection aur Ping test karein.\n"
+        "• /show <code>MONGO_URL</code> - Collections aur data count dekhein.\n"
+        "• /clearmongo <code>MONGO_URL</code> - Poora DB saaf (Drop) karein.\n"
+        "• /delmongocol <code>URL COL_NAME</code> - Specific table delete karein.\n"
+        "• /clone <code>SOURCE_URL TARGET_URL</code> - Ek DB se doosre mein data copy karein.\n\n"
+        
+        "🌐 <b>Web Dashboard:</b>\n"
+        "Aap /start dabakar <b>'Open Web Dashboard'</b> par click karke live status grid mein dekh sakte hain. Dashboard har 30s mein auto-refresh hota hai.\n\n"
+        
+        "⚠️ <b>Note:</b> Bot monitoring ke liye URL hamesha <code>https://</code> se start hona chahiye."
+    )
+
+    await message.reply(
+        help_text,
+        parse_mode=enums.ParseMode.HTML,
         disable_web_page_preview=True
     )
