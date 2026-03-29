@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bot Monitor Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #121212; color: white; text-align: center; }
+        .container { margin-top: 50px; }
+        .bot-card { background: #1e1e1e; padding: 15px; margin: 10px auto; width: 300px; border-radius: 10px; border-left: 5px solid #00ff00; }
+        .offline { border-left-color: #ff0000; }
+        .status { font-weight: bold; }
+        .Online { color: #00ff00; }
+        .Offline { color: #ff4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 Live Bot Monitor</h1>
+        <p>Last Updated: {{ time }}</p>
+        <hr style="width: 50%; border: 0.5px solid #333;">
+        
+        {% for bot in bots %}
+        <div class="bot-card {{ 'offline' if 'Offline' in bot.status else '' }}">
+            <h3>🤖 {{ bot.name }}</h3>
+            <p class="status">Status: <span class="{{ 'Online' if 'Online' in bot.status else 'Offline' }}">{{ bot.status }}</span></p>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

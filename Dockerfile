@@ -1,10 +1,7 @@
-# Buster ki jagah Bullseye ya Bookworm use karein
 FROM python:3.10-slim-bullseye
 
-# Working directory
 WORKDIR /app
 
-# Ab ye error nahi dega
 RUN apt-get update && apt-get install -y git
 
 COPY requirements.txt .

@@ -1,0 +1,28 @@
+from fastapi import APIRouter, Request
+from fastapi.templating import Jinja2Templates
+from database import get_all_bots
+from datetime import datetime
+import pytz
+from config import Config
+
+router = APIRouter()
+templates = Jinja2Templates(directory="web")
+
+@router.get("/")
+async def dashboard(request: Request):
+    IST = pytz.timezone(Config.TIME_ZONE)
+    current_time = datetime.now(IST).strftime('%H:%M:%S')
+    
+    bot_list = []
+    cursor = await get_all_bots()
+    async for bot in cursor:
+        bot_list.append({
+            "name": bot.get("name"),
+            "status": bot.get("status", "❌ Offline")
+        })
+    
+    return templates.TemplateResponse("startup.html", {
+        "request": request, 
+        "bots": bot_list, 
+        "time": current_time
+    })

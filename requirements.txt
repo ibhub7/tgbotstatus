@@ -6,3 +6,4 @@ uvicorn
 aiohttp
 pytz
 python-dotenv
+jinja2
