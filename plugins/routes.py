@@ -11,8 +11,12 @@ templates = Jinja2Templates(directory=os.path.join(base_dir, "web"))
 
 @router.get("/")
 async def homepage(request: Request):
-    """Base URL par landing page dikhane ke liye"""
-    return templates.TemplateResponse("homepage.html", {"request": request})
+    """Base URL landing page"""
+    return templates.TemplateResponse(
+        request=request, 
+        name="homepage.html", 
+        context={"request": request}
+    )
 
 @router.get("/dashboard/{user_id}")
 async def dashboard(request: Request, user_id: int):
@@ -20,6 +24,7 @@ async def dashboard(request: Request, user_id: int):
     now = datetime.now(IST)
     bot_list = []
     refresh_interval = 300
+    
     try:
         cursor = await get_user_bots(user_id)
         raw_bots = await cursor.to_list(length=100)
@@ -32,12 +37,14 @@ async def dashboard(request: Request, user_id: int):
         cfg = await get_user_config(user_id)
         if cfg: 
             refresh_interval = cfg.get("interval", 300)
-    except: 
-        pass
-        
+    except Exception as e:
+        print(f"DB Fetch Error: {e}")
+
+    # --- FIXED TEMPLATE RESPONSE ---
     return templates.TemplateResponse(
-        "startup.html", 
-        {
+        request=request, 
+        name="startup.html", 
+        context={
             "request": request, 
             "bots": bot_list, 
             "time": now.strftime('%H:%M:%S'), 
