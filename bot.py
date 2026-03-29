@@ -6,7 +6,7 @@ import pytz
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from pyrogram import Client
+from pyrogram import Client, enums
 from pyrogram.errors import MessageNotModified
 
 from config import Config
@@ -28,28 +28,27 @@ bot = Client(
 register_commands(bot)
 
 async def check_bots_loop():
-    """Background task for monitoring with Retry & Alerts."""
+    """Background task for monitoring with HTML Hyperlinks."""
     IST = pytz.timezone(Config.TIME_ZONE)
-    # Browser headers taaki pings block na hon
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) MonitorBot/1.0'}
     
     while True:
         now_ist = datetime.now(IST).strftime('%H:%M:%S')
         date_ist = datetime.now(IST).strftime('%d %B %Y')
         
-        status_text = "🌐 **Live Bot Status Report**\n"
-        status_text += f"📅 **Date:** `{date_ist}`\n"
-        status_text += f"⏰ **Last Updated:** `{now_ist} (IST)`\n\n"
+        # HTML Format Header
+        status_text = "🌐 <b>Live Bot Status Report</b>\n"
+        status_text += f"📅 <b>Date:</b> <code>{date_ist}</code>\n"
+        status_text += f"⏰ <b>Last Updated:</b> <code>{now_ist} (IST)</code>\n\n"
         
         async for target in await get_all_bots():
             name = target.get('name')
             url = target.get('url')
-            # Pichla status check karne ke liye (Alerts ke liye zaroori hai)
+            username = target.get('username', 'bot')
             prev_status = target.get('status', '✅ Online')
             
             web_status = "❌ Offline" 
             
-            # --- FEATURE: RETRY LOGIC (2 baar check karega) ---
             for attempt in range(2):
                 try:
                     async with aiohttp.ClientSession(headers=headers) as session:
@@ -58,27 +57,35 @@ async def check_bots_loop():
                                 web_status = "✅ Online"
                                 break 
                 except Exception:
-                    if attempt == 0: 
-                        await asyncio.sleep(10) # 10 sec wait before 2nd try
+                    if attempt == 0: await asyncio.sleep(10)
             
-            # --- FEATURE: OWNER ALERTS (Jab Online se Offline ho) ---
+            # Alert with HTML Link
             if "Offline" in web_status and "Online" in prev_status:
                 try:
                     await bot.send_message(
                         Config.OWNER_ID, 
-                        f"⚠️ **ALERT: {name} is DOWN!**\n⏰ Time: `{now_ist} IST`"
+                        f"⚠️ <b>ALERT: <a href='https://t.me/{username}'>{name}</a> is DOWN!</b>\n⏰ Time: <code>{now_ist} IST</code>",
+                        parse_mode=enums.ParseMode.HTML,
+                        disable_web_page_preview=True
                     )
                 except Exception as e:
-                    logger.error(f"Alert failed for {name}: {e}")
+                    logger.error(f"Alert failed: {e}")
 
-            # Database aur Channel text update
             await db.update_one({"name": name}, {"$set": {"status": web_status}})
-            status_text += f"🤖 **{name}**\n└ Status: {web_status}\n\n"
+            
+            # --- HTML HYPERLINK: <a href='...'>Name</a> ---
+            status_text += f"🤖 <b><a href='https://t.me/{username}'>{name}</a></b>\n└ Status: {web_status}\n\n"
 
-        status_text += f"🔄 _Next update in {Config.CHECK_INTERVAL // 60} minutes..._"
+        status_text += f"🔄 <i>Next update in {Config.CHECK_INTERVAL // 60} minutes...</i>"
 
         try:
-            await bot.edit_message_text(Config.STATUS_CHANNEL_ID, Config.STATUS_MESSAGE_ID, status_text)
+            await bot.edit_message_text(
+                Config.STATUS_CHANNEL_ID, 
+                Config.STATUS_MESSAGE_ID, 
+                status_text,
+                parse_mode=enums.ParseMode.HTML, # Mode Change to HTML
+                disable_web_page_preview=True
+            )
             logger.info(f"Updated status message at {now_ist}")
         except MessageNotModified:
             pass
@@ -91,18 +98,19 @@ async def check_bots_loop():
 async def lifespan(app: FastAPI):
     await bot.start()
     monitor_task = asyncio.create_task(check_bots_loop())
-    await asyncio.sleep(2) 
+    await asyncio.sleep(5) 
     
     try:
         IST = pytz.timezone(Config.TIME_ZONE)
         now_ist = datetime.now(IST).strftime('%H:%M:%S')
         await bot.send_message(
             Config.OWNER_ID, 
-            f"🚀 **System Online & Stable**\n"
-            f"✅ Health Checks: `Passed`\n"
-            f"⏰ Restarted At: `{now_ist} IST`"
+            f"🚀 <b>System Online & Stable</b>\n"
+            f"✅ Health Checks: <code>Passed</code>\n"
+            f"⏰ Restart At: <code>{now_ist} IST</code>",
+            parse_mode=enums.ParseMode.HTML,
+            disable_web_page_preview=True
         )
-        logger.info("Stability notification sent to owner.")
     except Exception as e:
         logger.error(f"Owner DM failed: {e}")
 
