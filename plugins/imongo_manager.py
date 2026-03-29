@@ -1,66 +1,71 @@
 import time
-from pyrogram import Client, filters
+from pyrogram import Client, filters, enums
 from motor.motor_asyncio import AsyncIOMotorClient
-from database import db
+from database import db 
+from config import Config
 
-@Client.on_message(filters.command("icheckmongo") & filters.private)
-async def check_mongo(client, message):
+# Helper filter for owner only
+def owner_only(f):
+    return filters.user(Config.OWNER_ID)
+
+@Client.on_message(filters.command("icheck") & owner_only)
+async def check_mongo_health(client, message):
     start = time.perf_counter()
     try:
-        # Ping check
         await db.command("ping")
-        end = time.perf_counter()
-        await message.reply(f"✅ **MongoDB is Alive!**\n⏱ **Latency:** `{(end - start) * 1000:.2f}ms`")
+        latency = (time.perf_counter() - start) * 1000
+        await message.reply(
+            f"✅ <b>MongoDB Connection Healthy!</b>\n⏱ <b>Ping:</b> <code>{latency:.2f}ms</code>",
+            parse_mode=enums.ParseMode.HTML
+        )
     except Exception as e:
-        await message.reply(f"❌ **MongoDB Error:**\n`{e}`")
+        await message.reply(f"❌ <b>MongoDB Connection Failed!</b>\n<code>{e}</code>", parse_mode=enums.ParseMode.HTML)
 
-@Client.on_message(filters.command("ishowmongo") & filters.private)
-async def show_mongo(client, message):
-    cols = await db.list_collection_names()
-    if not cols:
-        return await message.reply("📂 **No collections found.**")
+@Client.on_message(filters.command("ishow") & owner_only)
+async def show_collections(client, message):
+    collections = await db.list_collection_names()
+    if not collections:
+        return await message.reply("📂 <b>No collections found in Database.</b>", parse_mode=enums.ParseMode.HTML)
     
-    text = "📂 **Current Collections:**\n\n"
-    for i, col in enumerate(cols, 1):
+    res = "📂 <b>Database Collections:</b>\n\n"
+    for col in collections:
         count = await db[col].count_documents({})
-        text += f"{i}. `{col}` (Documents: {count})\n"
-    await message.reply(text)
+        res += f"🔹 <code>{col}</code>: <b>{count}</b> documents\n"
+    await message.reply(res, parse_mode=enums.ParseMode.HTML)
 
-@Client.on_message(filters.command("iclearmongo") & filters.private)
-async def clear_mongo(client, message):
-    cols = await db.list_collection_names()
-    for col in cols:
+@Client.on_message(filters.command("iclearmongo") & owner_only)
+async def clear_all_mongo(client, message):
+    collections = await db.list_collection_names()
+    for col in collections:
         await db[col].drop()
-    await message.reply("🗑 **All collections have been deleted successfully!**")
+    await message.reply("🗑 <b>All collections deleted successfully!</b>", parse_mode=enums.ParseMode.HTML)
 
-@Client.on_message(filters.command("idelmongocol") & filters.private)
-async def del_col(client, message):
+@Client.on_message(filters.command("idelmongocol") & owner_only)
+async def delete_specific_col(client, message):
     if len(message.command) < 2:
-        return await message.reply("❌ **Usage:** `/delmongocol collection_name`")
-    
+        return await message.reply("❌ <b>Usage:</b> <code>/idelmongocol collection_name</code>", parse_mode=enums.ParseMode.HTML)
     col_name = message.command[1]
     await db[col_name].drop()
-    await message.reply(f"🗑 Collection `{col_name}` deleted.")
+    await message.reply(f"🗑 Collection <code>{col_name}</code> dropped.", parse_mode=enums.ParseMode.HTML)
 
-@Client.on_message(filters.command("iclonemongo") & filters.private)
-async def clone_mongo(client, message):
-    # Usage: /clonemongo mongodb_url_here
+@Client.on_message(filters.command("iclone") & owner_only)
+async def clone_db(client, message):
     if len(message.command) < 2:
-        return await message.reply("❌ **Usage:** `/clonemongo NEW_MONGO_URL`")
+        return await message.reply("❌ <b>Usage:</b> <code>/iclone NEW_MONGO_URL</code>", parse_mode=enums.ParseMode.HTML)
     
     new_url = message.command[1]
-    await message.reply("⏳ **Cloning started... Please wait.**")
+    msg = await message.reply("⏳ <b>Cloning started... please wait.</b>", parse_mode=enums.ParseMode.HTML)
     
     try:
         new_client = AsyncIOMotorClient(new_url)
-        new_db = new_client.get_default_database()
+        new_database = new_client.get_default_database()
         
-        cols = await db.list_collection_names()
-        for col_name in cols:
+        collections = await db.list_collection_names()
+        for col_name in collections:
             docs = await db[col_name].find().to_list(length=None)
             if docs:
-                await new_db[col_name].insert_many(docs)
+                await new_database[col_name].insert_many(docs)
         
-        await message.reply("✅ **Cloning Complete!** All data moved to new DB.")
+        await msg.edit("✅ <b>Cloning Successful!</b> All data moved to new MongoDB.", parse_mode=enums.ParseMode.HTML)
     except Exception as e:
-        await message.reply(f"❌ **Clone Failed:** `{e}`")
+        await msg.edit(f"❌ <b>Cloning Failed!</b>\n<code>{e}</code>", parse_mode=enums.ParseMode.HTML)

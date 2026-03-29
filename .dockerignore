@@ -1,5 +1,11 @@
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git
+.gitignore
 .env
-.git/
-.dockerignore
 venv/
+.vscode/
+.session
+.session-journal
