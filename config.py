@@ -8,7 +8,7 @@ class Config:
     API_HASH = os.getenv("API_HASH", "")
     BOT_TOKEN = os.getenv("BOT_TOKEN", "")
     MONGO_URI = os.getenv("MONGO_URI", "")
-    
+    OWNER_ID = int(os.getenv("OWNER_ID", 0))
     STATUS_CHANNEL_ID = int(os.getenv("STATUS_CHANNEL_ID", 0))
     STATUS_MESSAGE_ID = int(os.getenv("STATUS_MESSAGE_ID", 0))
     

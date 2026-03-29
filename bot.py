@@ -7,6 +7,7 @@ import pytz
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from pyrogram import Client
+from pyrogram.errors import MessageNotModified
 
 from config import Config
 from database import get_all_bots
@@ -23,11 +24,13 @@ bot = Client(
     bot_token=Config.BOT_TOKEN
 )
 
-# Register our commands
 register_commands(bot)
 
 async def check_bots_loop():
-    await bot.start()
+    """Background task for monitoring."""
+    if not bot.is_connected:
+        await bot.start()
+    
     IST = pytz.timezone(Config.TIME_ZONE)
     
     while True:
@@ -43,7 +46,6 @@ async def check_bots_loop():
                 async with aiohttp.ClientSession() as session:
                     async with session.get(target['url'], timeout=15) as resp:
                         web_status = "✅ **Online**" if resp.status == 200 else f"⚠️ **Code {resp.status}**"
-                
                 status_text += f"🤖 **{target['name']}**\n└ Status: {web_status}\n\n"
             except Exception:
                 status_text += f"🤖 **{target['name']}**\n└ Status: ❌ **Offline**\n\n"
@@ -53,6 +55,8 @@ async def check_bots_loop():
         try:
             await bot.edit_message_text(Config.STATUS_CHANNEL_ID, Config.STATUS_MESSAGE_ID, status_text)
             logger.info(f"Updated status message at {now_ist}")
+        except MessageNotModified:
+            pass
         except Exception as e:
             logger.error(f"Failed to edit message: {e}")
             
@@ -60,13 +64,37 @@ async def check_bots_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(check_bots_loop())
+    # 1. Start the Bot Client
+    await bot.start()
+    
+    # 2. Start the Background Monitoring Task
+    monitor_task = asyncio.create_task(check_bots_loop())
+    
+    # 3. Small delay to ensure FastAPI/Uvicorn is fully stable
+    await asyncio.sleep(2) 
+    
+    # 4. Send DM to Owner AFTER stability
+    try:
+        IST = pytz.timezone(Config.TIME_ZONE)
+        now_ist = datetime.now(IST).strftime('%H:%M:%S')
+        await bot.send_message(
+            Config.OWNER_ID, 
+            f"🚀 **System Online & Stable**\n"
+            f"✅ Health Checks: `Passed`\n"
+            f"⏰ Restarted At: `{now_ist} IST`"
+        )
+        logger.info("Stability notification sent to owner.")
+    except Exception as e:
+        logger.error(f"Owner DM failed: {e}")
+
     yield
-    task.cancel()
+    
+    # Cleanup
+    monitor_task.cancel()
     await bot.stop()
 
 app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 async def health():
-    return {"status": "Monitor is running"}
+    return {"status": "Monitor is running and healthy"}
