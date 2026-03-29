@@ -1,6 +1,8 @@
 import re
 from pyrogram import Client, filters
 from database import add_bot, remove_bot
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from config import Config
 
 def register_commands(bot: Client):
     @bot.on_message(filters.command("addbot") & filters.private)
@@ -36,25 +38,33 @@ def register_commands(bot: Client):
             await message.reply("Usage: `/removebot \"Bot Name\"`")
 
     @bot.on_message(filters.command("start") & filters.private)
-    async def on_start(client, message):
-        # Professional greeting using the user's name
-        user_name = message.from_user.first_name
-        
-        start_text = (
-            f"👋 **Hello {user_name}!**\n\n"
-            "I am your **Advanced Bot Status Monitor**. I keep an eye on your "
-            "Koyeb and Render deployments to ensure they stay online.\n\n"
-            "📌 **Main Features:**\n"
-            "• Automatic 5-minute status checks.\n"
-            "• Live message editing in your channel.\n"
-            "• Support for multi-word bot names.\n"
-            "• No bot token required for pings.\n\n"
-            "🛠 **How to use me:**\n"
-            "1. Use `/addbot` to start monitoring a new URL.\n"
-            "2. Use `/list` to see your database.\n"
-            "3. Use `/stats` for a health overview.\n\n"
-            "💡 **Example:**\n"
-            "`/addbot \"Pro Movie Search\" https://mybot.koyeb.app`"
+    async def start_cmd(client, message):
+        # Aapka Dashboard URL (Koyeb/Render ka URL)
+        dashboard_url = "https://your-app-name.koyeb.app" 
+
+        text = (
+            f"👋 **Hello {message.from_user.mention}!**\n\n"
+            "Welcome to **Bot Monitor Pro**. I can track your bots' uptime "
+            "and alert you if they go offline.\n\n"
+            "📢 **Status Channel:** [Join Here](https://t.me/your_channel)\n"
+            "📊 **Live Dashboard:** Click the button below!"
         )
-        
-        await message.reply(start_text)
+
+        reply_markup = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    "🌐 Open Web Dashboard", 
+                    web_app=WebAppInfo(url=dashboard_url)
+                )
+            ],
+            [
+                InlineKeyboardButton("📢 Channel", url="https://t.me/infinity_botzz"),
+                InlineKeyboardButton("👨‍💻 Owner", user_id=Config.OWNER_ID)
+            ]
+        ])
+
+        await message.reply(
+            text, 
+            reply_markup=reply_markup,
+            disable_web_page_preview=True
+        )
