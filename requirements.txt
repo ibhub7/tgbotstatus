@@ -7,3 +7,4 @@ aiohttp
 pytz
 python-dotenv
 jinja2
+psutil

@@ -1,12 +1,15 @@
-import re, asyncio
+import re, asyncio, logging
 from pyrogram import Client, filters, enums
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, InputMediaPhoto
+from pyrogram.errors import FloodWait
 from database import (
     add_bot, remove_bot, get_user_bots, 
     update_user_settings, get_user_config, 
     add_user, get_all_users
 )
 from config import Config
+
+logger = logging.getLogger("MonitorBot")
 
 # --- 𝙸𝙽𝚂𝚃𝙰𝙽𝚃 𝚂𝚈𝙽𝙲 𝙷𝙴𝙻𝙿𝙴𝚁 ---
 async def refresh_monitor(user_id):
@@ -20,11 +23,15 @@ async def refresh_monitor(user_id):
         if cfg:
             inv, lnk = cfg.get('interval', 300), cfg.get('post_link')
             active_tasks[user_id] = asyncio.create_task(monitor_user_task(user_id, inv, lnk))
-    except ImportError:
-        pass
+            logger.info(f"Refreshed task for {user_id}")
+    except Exception as e:
+        logger.error(f"Refresh Error: {e}")
 
 def get_dash_url(user_id):
-    return f"https://infinity-monitor-bot-ug.koyeb.app/dashboard/{user_id}"
+    """Generates a secure WebApp URL with the access key"""
+    # Use Koyeb URL from your snippet + the mandatory security key
+    base_url = "https://infinity-monitor-bot-ug.koyeb.app"
+    return f"{base_url}/dashboard/{user_id}?key={Config.WEB_ACCESS_KEY}"
 
 # --- 𝚂𝚃𝙰𝚁𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
 @Client.on_message(filters.command("start") & filters.private)
@@ -33,8 +40,12 @@ async def start_cmd(client, message):
     await add_user(user_id)
     dashboard_url = get_dash_url(user_id)
     
+    # Replace this with your actual image direct link (e.g., from Telegraph)
+    # This link is hidden behind the first emoji to trigger the preview
+    image_url = "https://i.ibb.co/nM2Bcjg8/photo-2026-03-28-14-53-24-7622319747731816468.jpg" 
+    
     text = (
-        f"👋 ʜᴇʟʟᴏ {message.from_user.mention}!\n\n"
+        f"<a href='{image_url}'>👋</a> ʜᴇʟʟᴏ {message.from_user.mention}!\n\n"
         f"<blockquote>ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ</b>. ɪ ᴄᴀɴ ᴛʀᴀᴄᴋ ʏᴏᴜʀ ʙᴏᴛs ᴜᴘᴛɪᴍᴇ ᴀɴᴅ "
         f"sᴇɴᴅ ɪɴsᴛᴀɴᴛ ᴀʟᴇʀᴛs ɪғ ᴛʜᴇʏ ɢᴏ ᴏғғʟɪɴᴇ. 🚀</blockquote>\n\n"
         f"📊 <b>ʏᴏᴜʀ ᴘᴇʀsᴏɴᴀʟ ᴅᴀsʜʙᴏᴀʀᴅ ɪs ʀᴇᴀᴅʏ!</b>"
@@ -45,7 +56,14 @@ async def start_cmd(client, message):
         [InlineKeyboardButton("❓ ʜᴇʟᴘ ᴍᴇɴᴜ", callback_data="show_help")]
     ])
     
-    await message.reply(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    # Important: disable_web_page_preview MUST be False
+    await message.reply(
+        text, 
+        reply_markup=reply_markup, 
+        parse_mode=enums.ParseMode.HTML,
+        disable_web_page_preview=False,
+        invert_media=True
+    )
 
 # --- 𝙰𝙳𝙳 𝙱𝙾𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
 @Client.on_message(filters.command("addbot") & filters.private)
@@ -78,7 +96,7 @@ async def broadcast_handler(client, message):
     if not message.reply_to_message: 
         return await message.reply("⚠️ ʀᴇᴘʟʏ ᴛᴏ ᴀ ᴍᴇssᴀɢᴇ ᴛᴏ ʙʀᴏᴀᴅᴄᴀsᴛ.")
     
-    status_msg = await message.reply("📡 ʙʀᴏᴀᴅᴄᴀsᴛɪɴɢ ɪɴ ᴘʀᴏɢʀᴇss...")
+    status_msg = await message.reply("📡 ʙʀᴏᴀᴅᴄᴀsᴛɪɴɢ...")
     all_users = await get_all_users()
     count, failed = 0, 0
     
@@ -86,8 +104,12 @@ async def broadcast_handler(client, message):
         try:
             await message.reply_to_message.copy(user['user_id'])
             count += 1
-            await asyncio.sleep(0.3)
-        except: 
+            await asyncio.sleep(0.05) # Faster but safe
+        except FloodWait as e:
+            await asyncio.sleep(e.value)
+            await message.reply_to_message.copy(user['user_id'])
+            count += 1
+        except Exception: 
             failed += 1
             
     await status_msg.edit(
@@ -113,37 +135,22 @@ async def set_interval(client, message):
         f"<blockquote>ʏᴏᴜʀ ʙᴏᴛs ᴡɪʟʟ ʙᴇ ᴄʜᴇᴄᴋᴇᴅ ᴇᴠᴇʀʏ <b>{args[1]} ᴍɪɴᴜᴛᴇs</b>.</blockquote>"
     )
 
-# --- 𝙻𝙸𝚂𝚃 𝙱𝙾𝚃𝚂 ---
-@Client.on_message(filters.command("list") & filters.private)
-async def list_bots(client, message):
-    user_id = message.from_user.id
-    cursor = await get_user_bots(user_id)
-    bot_list = await cursor.to_list(length=None)
-    
-    if not bot_list:
-        return await message.reply("❌ ʏᴏᴜʀ ᴍᴏɴɪᴛᴏʀɪɴɢ ʟɪsᴛ ɪs ᴇᴍᴘᴛʏ.")
-
-    res = f"📋 <b>ʏᴏᴜʀ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛs</b>\n\n"
-    for i, bot in enumerate(bot_list, 1):
-        res += f"{i}. <b>{bot['name']}</b>\n<blockquote>sᴛᴀᴛᴜs: {bot['status']}</blockquote>\n"
-    
-    await message.reply(res)
-
 # --- 𝚁𝙴𝙼𝙾𝚅𝙴 𝙱𝙾𝚃 ---
 @Client.on_message(filters.command("removebot") & filters.private)
 async def on_remove(client, message):
     user_id = message.from_user.id
+    # Check for quotes first, fallback to text after command
     match = re.search(r'"([^"]+)"', message.text)
+    name = match.group(1).strip() if match else message.text.split(None, 1)[1] if len(message.command) > 1 else None
     
-    if match:
-        name = match.group(1).strip()
-        await remove_bot(user_id, name)
-        await refresh_monitor(user_id)
-        await message.reply(f"🗑️ <b>sᴜᴄᴄᴇssғᴜʟʟʏ ʀᴇᴍᴏᴠᴇᴅ:</b> <code>{name}</code>")
-    else:
-        await message.reply("❌ ᴜsᴀɢᴇ: <code>/removebot \"Bot Name\"</code>")
+    if not name:
+        return await message.reply("❌ ᴜsᴀɢᴇ: <code>/removebot \"Bot Name\"</code>")
 
-# --- 𝚂𝙴𝚃 𝙻𝙸𝙽Ｋ ---
+    await remove_bot(user_id, name)
+    await refresh_monitor(user_id)
+    await message.reply(f"🗑️ <b>sᴜᴄᴄᴇssғᴜʟʟʏ ʀᴇᴍᴏᴠᴇᴅ:</b> <code>{name}</code>")
+
+# --- 𝚂𝙴𝚃 𝙻𝙸𝙽𝙺 ---
 @Client.on_message(filters.command("set_link") & filters.private)
 async def on_set_link(client, message):
     user_id = message.from_user.id
@@ -155,41 +162,34 @@ async def on_set_link(client, message):
     await refresh_monitor(user_id)
     await message.reply("✅ <b>sᴛᴀᴛᴜs ʟɪɴᴋ ᴜᴘᴅᴀᴛᴇᴅ!</b>\n<blockquote>ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ ᴘᴏsᴛ ᴡɪʟʟ ɴᴏᴡ ʙᴇ ᴜᴘᴅᴀᴛᴇᴅ ʟɪᴠᴇ.</blockquote>")
 
-# --- 𝙷𝙴𝙻𝙿 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 𝚆𝙸𝚃𝙷 𝚂𝙴𝚃𝚄𝙿 𝙶𝚄𝙸𝙳𝙴 ---
+# --- 𝙳𝙰𝚂𝙷𝙱𝙾𝙰𝚁𝙳 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
+@Client.on_message(filters.command("dashboard") & filters.private)
+async def dash_cmd(client, message):
+    user_id = message.from_user.id
+    url = get_dash_url(user_id)
+    await message.reply(
+        "📊 <b>ʏᴏᴜʀ ᴘᴇʀsᴏɴᴀʟ ᴅᴀsʜʙᴏᴀʀᴅ</b>\n\n"
+        "ᴄʟɪᴄᴋ ʙᴇʟᴏᴡ ᴛᴏ ᴍᴀɴᴀɢᴇ ʏᴏᴜʀ ʙᴏᴛs ɪɴ ᴀ ᴍᴏᴅᴇʀɴ ᴡᴇʙ ɪɴᴛᴇʀғᴀᴄᴇ.",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("🌐 ᴏᴘᴇɴ ᴡᴇʙ ᴅᴀsʜʙᴏᴀʀᴅ", web_app=WebAppInfo(url=url))]
+        ])
+    )
+
+# --- 𝙷𝙴𝙻𝙿 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
 @Client.on_message(filters.command("help") & filters.private)
 async def help_cmd(client, message):
     help_text = (
         "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜsᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
-        
-        "🚀 <b>ǫᴜɪᴄᴋ sᴇᴛᴜᴘ ɢᴜɪᴅᴇ:</b>\n"
+        "🚀 <b>ǫᴜɪᴄᴋ sᴇᴛᴜᴘ:</b>\n"
         "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀs ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
-        "𝟸. ᴄʜᴀɴɴᴇʟ ᴍᴇɪɴ ᴇᴋ ᴅᴜᴍᴍʏ ᴍᴇssᴀɢᴇ (ᴇ.ɢ. '.') ᴋᴀʀᴇɪɴ ᴀᴜʀ ᴜsᴋᴀ ʟɪɴᴋ ᴄᴏᴘʏ ᴋᴀʀᴇɪɴ.\n"
-        "𝟹. ᴜsᴇ <code>/set_link ʏᴏᴜʀ_ᴘᴏsᴛ_ʟɪɴᴋ</code> ᴛᴏ ᴄᴏɴɴᴇᴄᴛ.\n"
-        "𝟺. ᴜsᴇ <code>/addbot @ᴜsᴇʀɴᴀᴍᴇ ᴜʀʟ</code> ᴛᴏ sᴛᴀʀᴛ ᴍᴏɴɪᴛᴏʀɪɴɢ.</blockquote>\n\n"
-        
-        "✨ <b>ᴍᴏɴɪᴛᴏʀɪɴɢ ᴄᴏᴍᴍᴀɴᴅs:</b>\n"
-        "<blockquote>• <code>/addbot @username URL</code>\n"
-        "<i>ᴀᴅᴅ ᴀ ʙᴏᴛ ᴛᴏ ʏᴏᴜʀ ᴘᴇʀsᴏɴᴀʟ ʟɪsᴛ.</i>\n\n"
-        "• <code>/removebot \"Bot Name\"</code>\n"
-        "<i>ʀᴇᴍᴏᴠᴇ ᴜsɪɴɢ ɴᴀᴍᴇ ɪɴsɪᴅᴇ ǫᴜᴏᴛᴇs.</i>\n\n"
-        "• <code>/list</code>\n"
-        "<i>sʜᴏᴡ ᴀʟʟ ʏᴏᴜʀ ʀᴇɢɪsᴛᴇʀᴇᴅ ʙᴏᴛs.</i></blockquote>\n\n"
-        
-        "⚙️ <b>ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴs:</b>\n"
-        "<blockquote>• <code>/set_interval 2</code>\n"
-        "<i>sᴇᴛ ᴄʜᴇᴄᴋ ᴛɪᴍᴇ ᴛᴏ 𝟸 ᴏʀ 𝟻 ᴍɪɴᴜᴛᴇs.</i>\n\n"
-        "• <code>/set_link ᴘᴏsᴛ_ᴜʀʟ</code>\n"
-        "<i>ʟɪɴᴋ ᴀ ᴄʜᴀɴɴᴇʟ ᴘᴏsᴛ ғᴏʀ ʟɪᴠᴇ ᴜᴘᴅᴀᴛᴇs.</i></blockquote>\n\n"
-        
-        "📊 <b>ᴡᴇʙ ᴅᴀsʜʙᴏᴀʀᴅ:</b>\n"
-        "<blockquote>• <code>/dashboard</code>\n"
-        "<i>ɢᴇᴛ ʏᴏᴜʀ ᴜɴɪǫᴜᴇ ᴘʀɪᴠᴀᴛᴇ ʟɪɴᴋ.</i></blockquote>\n\n"
-        
-        "⚠️ <b>ɴᴏᴛᴇ:</b> ᴀʟᴡᴀʏs ᴜsᴇ <code>https://</code> ɪɴ ʏᴏᴜʀ ʙᴏᴛ ᴇɴᴅᴘᴏɪɴᴛ ᴜʀʟ."
+        "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇssᴀɢᴇ ʟɪɴᴋ ғʀᴏᴍ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ.\n"
+        "𝟹. ᴜsᴇ <code>/set_link</code> + ᴛʜᴀᴛ ʟɪɴᴋ.\n"
+        "𝟺. ᴜsᴇ <code>/addbot</code> @username URL.</blockquote>\n\n"
+        "📊 <b>ᴄᴏᴍᴍᴀɴᴅs:</b>\n"
+        "• /addbot - ᴀᴅᴅ ʙᴏᴛ ᴛᴏ ʟɪsᴛ\n"
+        "• /removebot - ʀᴇᴍᴏᴠᴇ ᴀ ʙᴏᴛ\n"
+        "• /list - sʜᴏᴡ ᴀʟʟ ʙᴏᴛs\n"
+        "• /set_interval - sᴇᴛ 𝟸/𝟻 ᴍɪɴ ᴄʜᴇᴄᴋs\n"
+        "• /dashboard - ɢᴇᴛ ʏᴏᴜʀ ᴡᴇʙ ʟɪɴᴋ"
     )
-    
-    await message.reply(
-        help_text, 
-        parse_mode=enums.ParseMode.HTML,
-        disable_web_page_preview=True
-    )
+    await message.reply(help_text, disable_web_page_preview=True)

@@ -9,8 +9,7 @@ class Config:
     BOT_TOKEN = os.getenv("BOT_TOKEN", "")
     MONGO_URI = os.getenv("MONGO_URI", "")
     OWNER_ID = int(os.getenv("OWNER_ID", 0))
-    STATUS_CHANNEL_ID = int(os.getenv("STATUS_CHANNEL_ID", 0))
-    STATUS_MESSAGE_ID = int(os.getenv("STATUS_MESSAGE_ID", 0))
+    WEB_ACCESS_KEY = os.getenv("WEB_ACCESS_KEY", "ip") 
     
     TIME_ZONE = "Asia/Kolkata"
-    CHECK_INTERVAL = 300  # 5 minutes
+    CHECK_INTERVAL = 300 #5 min

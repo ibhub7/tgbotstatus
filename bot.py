@@ -1,18 +1,17 @@
-import asyncio, aiohttp, logging, os, sys, pytz
+import asyncio, aiohttp, logging, pytz
 from datetime import datetime
-from fastapi import FastAPI
-from contextlib import asynccontextmanager
 from pyrogram import Client, enums
 from pyrogram.errors import MessageNotModified, FloodWait
 from config import Config
-from database import get_user_bots, bots_col, users_settings, registered_users
-from plugins.routes import router as web_router 
+from database import bots_col, users_settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("MonitorBot")
 
 active_tasks = {}
 
+# Initialize Pyrogram Client
+# main.py will import this 'bot' instance to start it
 bot = Client(
     "MonitorBot", 
     api_id=Config.API_ID, 
@@ -45,10 +44,12 @@ async def monitor_user_task(user_id, interval, post_link):
             )
 
             cursor = bots_col.find({"user_id": user_id})
-            user_bots = await cursor.to_list(length=None)         
+            user_bots = await cursor.to_list(length=None) 
+            
             if not user_bots:
                 await asyncio.sleep(600)
                 continue
+
             for target in user_bots:
                 name, url, username = target['name'], target['url'], target.get('username', 'bot')
                 prev_status = target.get('status', '✅ Online')
@@ -73,6 +74,7 @@ async def monitor_user_task(user_id, interval, post_link):
                     f"   └ Status: {web_status}\n\n"
                 )
 
+                # Send offline alert to user DM
                 if "Offline" in web_status and "Online" in prev_status:
                     try:
                         await bot.send_message(
@@ -90,9 +92,7 @@ async def monitor_user_task(user_id, interval, post_link):
                 if cid and mid:
                     try:
                         await bot.edit_message_text(
-                            cid,
-                            mid,
-                            status_text,
+                            cid, mid, status_text,
                             parse_mode=enums.ParseMode.HTML,
                             disable_web_page_preview=True
                         )
@@ -107,43 +107,15 @@ async def monitor_user_task(user_id, interval, post_link):
         await asyncio.sleep(interval)
 
 async def start_all_tasks():
+    # Fetch all users that have bots registered
     uids = await bots_col.distinct("user_id")
     for uid in uids:
         cfg = await users_settings.find_one({"user_id": uid})
         inv = cfg.get('interval', 300) if cfg else 300
         lnk = cfg.get('post_link') if cfg else None
-        active_tasks[uid] = asyncio.create_task(monitor_user_task(uid, inv, lnk))
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # --- STARTUP LOGIC ---
-    await bot.start()
+        
+        # Start a unique background task for each user
+        if uid not in active_tasks or active_tasks[uid].done():
+            active_tasks[uid] = asyncio.create_task(monitor_user_task(uid, inv, lnk))
     
-    # Send Health Check to Owner
-    IST = pytz.timezone(Config.TIME_ZONE)
-    restart_time = datetime.now(IST).strftime('%H:%M:%S')
-    try:
-        await bot.send_message(
-            Config.OWNER_ID,
-            f"🚀 <b>System Online & Stable</b>\n"
-            f"✅ <b>Health Checks:</b> Passed\n"
-            f"⏰ <b>Restart At:</b> <code>{restart_time} IST</code>"
-        )
-    except Exception as e:
-        logger.error(f"Failed to send owner DM: {e}")
-
-    # Start Background Tasks
-    asyncio.create_task(start_all_tasks())
-    
-    # Auto-Restart Logic (24 Hours)
-    async def auto_restart():
-        await asyncio.sleep(24 * 3600)
-        logger.info("Auto-restarting server...")
-        os.execv(sys.executable, ['python'] + sys.argv)
-    
-    asyncio.create_task(auto_restart())
-    yield
-    await bot.stop()
-
-app = FastAPI(lifespan=lifespan)
-app.include_router(web_router)
+    logger.info(f"Initialized {len(uids)} monitoring tasks.")
