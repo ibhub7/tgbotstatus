@@ -11,10 +11,8 @@ router = APIRouter()
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(base_dir, "templates"))
 
-# 1. PUBLIC HOMEPAGE (No key required)
 @router.get("/")
 async def homepage(request: Request):
-    """Base URL landing page - Open for everyone"""
     return templates.TemplateResponse(
         "homepage.html", 
         {"request": request}
