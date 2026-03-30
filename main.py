@@ -7,15 +7,17 @@ from config import Config
 from bot import bot, start_all_tasks 
 from plugins.routes import router as web_router
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("MonitorBot")
 
+# --- LIFESPAN MANAGER ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Start Bot
+    # 1. Start the Telegram Bot
     await bot.start()
+    logger.info("Telegram Bot Started!")
     
-    # 2. Owner DM
+    # 2. Notify Owner
     IST = pytz.timezone(Config.TIME_ZONE)
     restart_time = datetime.now(IST).strftime('%H:%M:%S')
     try:
@@ -25,10 +27,28 @@ async def lifespan(app: FastAPI):
             f"✅ <b>Health Checks:</b> Passed\n"
             f"⏰ <b>Restart At:</b> <code>{restart_time} IST</code>"
         )
-    except: pass
+    except Exception as e:
+        logger.error(f"Failed to send Owner DM: {e}")
 
-    # 3. Start Tasks
+    # 3. Start Background Monitoring Tasks
     asyncio.create_task(start_all_tasks())
     
-    # 4. Auto-restart (24h)
+    # 4. Auto-restart Logic (Triggers every 24 hours)
     async def auto_restart():
+        await asyncio.sleep(24 * 3600)
+        logger.info("Performing scheduled 24h restart...")
+        os.execv(sys.executable, ['python'] + sys.argv)
+    
+    asyncio.create_task(auto_restart())
+    
+    yield
+    # 5. Clean Shutdown
+    logger.info("Stopping Bot...")
+    await bot.stop()
+
+# --- INITIALIZE APP ---
+app = FastAPI(lifespan=lifespan)
+
+# --- INCLUDE WEB ROUTES ---
+# This connects your dashboard and homepage to the FastAPI app
+app.include_router(web_router)
