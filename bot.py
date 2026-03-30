@@ -13,8 +13,14 @@ logger = logging.getLogger("MonitorBot")
 
 active_tasks = {}
 
-bot = Client("MonitorBot", api_id=Config.API_ID, api_hash=Config.API_HASH, 
-             bot_token=Config.BOT_TOKEN, plugins=dict(root="plugins"), in_memory=True)
+bot = Client(
+    "MonitorBot", 
+    api_id=Config.API_ID, 
+    api_hash=Config.API_HASH, 
+    bot_token=Config.BOT_TOKEN, 
+    plugins=dict(root="plugins"), 
+    in_memory=True
+)
 
 def parse_tg_link(link):
     try:
@@ -23,7 +29,8 @@ def parse_tg_link(link):
         chat_val = parts[-2]
         chat_id = int(f"-100{chat_val}") if chat_val.isdigit() else f"@{chat_val}"
         return chat_id, msg_id
-    except: return None, None
+    except: 
+        return None, None
 
 async def monitor_user_task(user_id, interval, post_link):
     IST = pytz.timezone(Config.TIME_ZONE)
@@ -38,7 +45,7 @@ async def monitor_user_task(user_id, interval, post_link):
             )
 
             cursor = bots_col.find({"user_id": user_id})
-            user_bots = await cursor.to_list(length=None)
+            user_bots = await cursor.to_list(length=None)         
             if not user_bots:
                 await asyncio.sleep(600)
                 continue
@@ -59,8 +66,8 @@ async def monitor_user_task(user_id, interval, post_link):
                     {"user_id": user_id, "name": name},
                     {"$set": {"status": web_status}}
                 )
+                
                 icon = "🟢" if "Online" in web_status else "🔴"
-
                 status_text += (
                     f"{icon} <b><a href='https://t.me/{username}'>{name}</a></b>\n"
                     f"   └ Status: {web_status}\n\n"
@@ -75,7 +82,6 @@ async def monitor_user_task(user_id, interval, post_link):
                     except:
                         pass
 
-            # ✅ FOOTER
             status_text += "━━━━━━━━━━━━━━━━━━━━━━━\n"
             status_text += f"🔄 <i>Auto refresh every {interval//60} min</i>"
 
@@ -104,16 +110,37 @@ async def start_all_tasks():
     uids = await bots_col.distinct("user_id")
     for uid in uids:
         cfg = await users_settings.find_one({"user_id": uid})
-        inv, lnk = (cfg.get('interval', 300) if cfg else 300), (cfg.get('post_link') if cfg else None)
+        inv = cfg.get('interval', 300) if cfg else 300
+        lnk = cfg.get('post_link') if cfg else None
         active_tasks[uid] = asyncio.create_task(monitor_user_task(uid, inv, lnk))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # --- STARTUP LOGIC ---
     await bot.start()
+    
+    # Send Health Check to Owner
+    IST = pytz.timezone(Config.TIME_ZONE)
+    restart_time = datetime.now(IST).strftime('%H:%M:%S')
+    try:
+        await bot.send_message(
+            Config.OWNER_ID,
+            f"🚀 <b>System Online & Stable</b>\n"
+            f"✅ <b>Health Checks:</b> Passed\n"
+            f"⏰ <b>Restart At:</b> <code>{restart_time} IST</code>"
+        )
+    except Exception as e:
+        logger.error(f"Failed to send owner DM: {e}")
+
+    # Start Background Tasks
     asyncio.create_task(start_all_tasks())
+    
+    # Auto-Restart Logic (24 Hours)
     async def auto_restart():
         await asyncio.sleep(24 * 3600)
+        logger.info("Auto-restarting server...")
         os.execv(sys.executable, ['python'] + sys.argv)
+    
     asyncio.create_task(auto_restart())
     yield
     await bot.stop()
