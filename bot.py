@@ -31,7 +31,12 @@ async def monitor_user_task(user_id, interval, post_link):
     while True:
         try:
             now_ist = datetime.now(IST).strftime('%H:%M:%S')
-            status_text = f"🌐 <b>Live Status Report</b>\n⏰ <b>Sync:</b> <code>{now_ist} IST</code>\n\n"
+            status_text = (
+                "🌐 <b>LIVE BOT STATUS</b>\n"
+                f"⏰ <b>Last Sync:</b> <code>{now_ist} IST</code>\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            )
+
             cursor = bots_col.find({"user_id": user_id})
             user_bots = await cursor.to_list(length=None)
             if not user_bots:
@@ -41,23 +46,58 @@ async def monitor_user_task(user_id, interval, post_link):
                 name, url, username = target['name'], target['url'], target.get('username', 'bot')
                 prev_status = target.get('status', '✅ Online')
                 web_status = "❌ Offline"
+
                 try:
                     async with aiohttp.ClientSession(headers=headers) as session:
                         async with session.get(url, timeout=10) as resp:
-                            if resp.status == 200: web_status = "✅ Online"
-                except: pass
-                await bots_col.update_one({"user_id": user_id, "name": name}, {"$set": {"status": web_status}})
-                status_text += f"🤖 <b><a href='https://t.me/{username}'>{name}</a></b>: {web_status}\n"
+                            if resp.status == 200:
+                                web_status = "✅ Online"
+                except:
+                    pass
+
+                await bots_col.update_one(
+                    {"user_id": user_id, "name": name},
+                    {"$set": {"status": web_status}}
+                )
+                icon = "🟢" if "Online" in web_status else "🔴"
+
+                status_text += (
+                    f"{icon} <b><a href='https://t.me/{username}'>{name}</a></b>\n"
+                    f"   └ Status: {web_status}\n\n"
+                )
+
                 if "Offline" in web_status and "Online" in prev_status:
-                    try: await bot.send_message(user_id, f"⚠️ <b>ALERT: {name} is DOWN!</b>")
-                    except: pass
+                    try:
+                        await bot.send_message(
+                            user_id,
+                            f"⚠️ <b>ALERT: {name} is DOWN!</b>"
+                        )
+                    except:
+                        pass
+
+            # ✅ FOOTER
+            status_text += "━━━━━━━━━━━━━━━━━━━━━━━\n"
+            status_text += f"🔄 <i>Auto refresh every {interval//60} min</i>"
+
             if post_link:
                 cid, mid = parse_tg_link(post_link)
                 if cid and mid:
-                    try: await bot.edit_message_text(cid, mid, status_text, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True)
-                    except MessageNotModified: pass
-                    except FloodWait as e: await asyncio.sleep(e.value)
-        except Exception as e: logger.error(f"Task Error {user_id}: {e}")
+                    try:
+                        await bot.edit_message_text(
+                            cid,
+                            mid,
+                            status_text,
+                            parse_mode=enums.ParseMode.HTML,
+                            disable_web_page_preview=True
+                        )
+                    except MessageNotModified:
+                        pass
+                    except FloodWait as e:
+                        await asyncio.sleep(e.value)
+
+        except Exception as e:
+            logger.error(f"Task Error {user_id}: {e}")
+
         await asyncio.sleep(interval)
 
 async def start_all_tasks():
