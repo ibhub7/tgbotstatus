@@ -87,7 +87,7 @@ async def list_cmd(client, message):
         # 2. Blockquote with a yellow-style bar and Small Caps status text
         text += (
             f"{i}. <b><a href='https://t.me/{username}'>{name}</a></b>\n"
-            f"<blockquote>sᴛᴀᴛᴜs: {icon} {status} ❞</blockquote>\n"
+            f"<blockquote>sᴛᴀᴛᴜs: {status}</blockquote>\n\n"
         )
     
     await message.reply(
