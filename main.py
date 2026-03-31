@@ -7,25 +7,32 @@ from config import Config
 from bot import bot, start_all_tasks 
 from plugins.routes import router as web_router
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+# Update logging to handle file output for the /logs command
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("bot.log"),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 logger = logging.getLogger("MonitorBot")
 
-# --- LIFESPAN MANAGER ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. Start the Telegram Bot
     await bot.start()
     logger.info("Telegram Bot Started!")
     
-    # 2. Notify Owner
+    # 2. Notify Owner (Persistence check)
     IST = pytz.timezone(Config.TIME_ZONE)
     restart_time = datetime.now(IST).strftime('%H:%M:%S')
     try:
         await bot.send_message(
             Config.OWNER_ID, 
-            f"🚀 <b>System Online & Stable</b>\n"
-            f"✅ <b>Health Checks:</b> Passed\n"
-            f"⏰ <b>Restart At:</b> <code>{restart_time} IST</code>"
+            f"🚀 <b>sʏsᴛᴇᴍ ᴏɴʟɪɴᴇ & sᴛᴀʙʟᴇ</b>\n"
+            f"✅ <b>ʜᴇᴀʟᴛʜ ᴄʜᴇᴄᴋs:</b> ᴘᴀssᴇᴅ\n"
+            f"⏰ <b>ʀᴇsᴛᴀʀᴛ ᴀᴛ:</b> <code>{restart_time} IST</code>"
         )
     except Exception as e:
         logger.error(f"Failed to send Owner DM: {e}")
@@ -33,7 +40,7 @@ async def lifespan(app: FastAPI):
     # 3. Start Background Monitoring Tasks
     asyncio.create_task(start_all_tasks())
     
-    # 4. Auto-restart Logic (Triggers every 24 hours)
+    # 4. Auto-restart Logic  (Triggers every 24 hours)
     async def auto_restart():
         await asyncio.sleep(24 * 3600)
         logger.info("Performing scheduled 24h restart...")

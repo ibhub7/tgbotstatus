@@ -10,15 +10,14 @@ logger = logging.getLogger("MonitorBot")
 
 active_tasks = {}
 
-# Initialize Pyrogram Client
-# main.py will import this 'bot' instance to start it
 bot = Client(
     "MonitorBot", 
     api_id=Config.API_ID, 
     api_hash=Config.API_HASH, 
     bot_token=Config.BOT_TOKEN, 
     plugins=dict(root="plugins"), 
-    in_memory=True
+    in_memory=True,
+    sleep_threshold=60 
 )
 
 def parse_tg_link(link):
@@ -38,8 +37,8 @@ async def monitor_user_task(user_id, interval, post_link):
         try:
             now_ist = datetime.now(IST).strftime('%H:%M:%S')
             status_text = (
-                "🌐 <b>LIVE BOT STATUS</b>\n"
-                f"⏰ <b>Last Sync:</b> <code>{now_ist} IST</code>\n"
+                "🌐 <b>ʟɪᴠᴇ ʙᴏᴛ sᴛᴀᴛᴜs</b>\n"
+                f"⏰ <b>ʟᴀsᴛ sʏɴᴄ:</b> <code>{now_ist} IST</code>\n"
                 "━━━━━━━━━━━━━━━━━━━━━━━\n\n"
             )
 
@@ -63,6 +62,18 @@ async def monitor_user_task(user_id, interval, post_link):
                 except:
                     pass
 
+                # --- NEW: STATUS CHANGE ALERTS ---
+                if web_status != prev_status:
+                    if "Offline" in web_status:
+                        alert = f"⚠️ <b>ᴀʟᴇʀᴛ: {name} ɪs ᴅᴏᴡɴ!</b>"
+                    else:
+                        alert = f"✅ <b>ʀᴇᴄᴏᴠᴇʀᴇᴅ: {name} ɪs ʙᴀᴄᴋ ᴏɴʟɪɴᴇ!</b>"
+                    
+                    try:
+                        await bot.send_message(user_id, alert)
+                    except:
+                        pass
+
                 await bots_col.update_one(
                     {"user_id": user_id, "name": name},
                     {"$set": {"status": web_status}}
@@ -71,35 +82,19 @@ async def monitor_user_task(user_id, interval, post_link):
                 icon = "🟢" if "Online" in web_status else "🔴"
                 status_text += (
                     f"{icon} <b><a href='https://t.me/{username}'>{name}</a></b>\n"
-                    f"   └ Status: {web_status}\n\n"
+                    f"   └ sᴛᴀᴛᴜs: {web_status}\n\n"
                 )
 
-                # Send offline alert to user DM
-                if "Offline" in web_status and "Online" in prev_status:
-                    try:
-                        await bot.send_message(
-                            user_id,
-                            f"⚠️ <b>ALERT: {name} is DOWN!</b>"
-                        )
-                    except:
-                        pass
-
             status_text += "━━━━━━━━━━━━━━━━━━━━━━━\n"
-            status_text += f"🔄 <i>Auto refresh every {interval//60} min</i>"
+            status_text += f"🔄 <i>ᴀᴜᴛᴏ ʀᴇғʀᴇsʜ ᴇᴠᴇʀʏ {interval//60} ᴍɪɴ</i>"
 
             if post_link:
                 cid, mid = parse_tg_link(post_link)
                 if cid and mid:
                     try:
-                        await bot.edit_message_text(
-                            cid, mid, status_text,
-                            parse_mode=enums.ParseMode.HTML,
-                            disable_web_page_preview=True
-                        )
-                    except MessageNotModified:
+                        await bot.edit_message_text(cid, mid, status_text, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True)
+                    except (MessageNotModified, FloodWait):
                         pass
-                    except FloodWait as e:
-                        await asyncio.sleep(e.value)
 
         except Exception as e:
             logger.error(f"Task Error {user_id}: {e}")
@@ -107,15 +102,11 @@ async def monitor_user_task(user_id, interval, post_link):
         await asyncio.sleep(interval)
 
 async def start_all_tasks():
-    # Fetch all users that have bots registered
     uids = await bots_col.distinct("user_id")
     for uid in uids:
         cfg = await users_settings.find_one({"user_id": uid})
         inv = cfg.get('interval', 300) if cfg else 300
         lnk = cfg.get('post_link') if cfg else None
-        
-        # Start a unique background task for each user
         if uid not in active_tasks or active_tasks[uid].done():
             active_tasks[uid] = asyncio.create_task(monitor_user_task(uid, inv, lnk))
-    
     logger.info(f"Initialized {len(uids)} monitoring tasks.")

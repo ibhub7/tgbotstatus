@@ -1,11 +1,11 @@
 import re, asyncio, logging
 from pyrogram import Client, filters, enums
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, InputMediaPhoto
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from pyrogram.errors import FloodWait
 from database import (
     add_bot, remove_bot, get_user_bots, 
     update_user_settings, get_user_config, 
-    add_user, get_all_users
+    add_user, get_all_users, bots_col
 )
 from config import Config
 
@@ -29,7 +29,6 @@ async def refresh_monitor(user_id):
 
 def get_dash_url(user_id):
     """Generates a secure WebApp URL with the access key"""
-    # Use Koyeb URL from your snippet + the mandatory security key
     base_url = "https://infinity-monitor-bot-ug.koyeb.app"
     return f"{base_url}/dashboard/{user_id}?key={Config.WEB_ACCESS_KEY}"
 
@@ -40,8 +39,6 @@ async def start_cmd(client, message):
     await add_user(user_id)
     dashboard_url = get_dash_url(user_id)
     
-    # Replace this with your actual image direct link (e.g., from Telegraph)
-    # This link is hidden behind the first emoji to trigger the preview
     image_url = "https://i.ibb.co/nM2Bcjg8/photo-2026-03-28-14-53-24-7622319747731816468.jpg" 
     
     text = (
@@ -56,7 +53,6 @@ async def start_cmd(client, message):
         [InlineKeyboardButton("❓ ʜᴇʟᴘ ᴍᴇɴᴜ", callback_data="show_help")]
     ])
     
-    # Important: disable_web_page_preview MUST be False
     await message.reply(
         text, 
         reply_markup=reply_markup, 
@@ -64,6 +60,35 @@ async def start_cmd(client, message):
         disable_web_page_preview=False,
         invert_media=True
     )
+
+# --- 𝙻𝙸𝚂𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
+@Client.on_message(filters.command("list") & filters.private)
+async def list_cmd(client, message):
+    user_id = message.from_user.id
+    cursor = await get_user_bots(user_id)
+    user_bots = await cursor.to_list(length=100)
+
+    if not user_bots:
+        return await message.reply("❌ <b>ʏᴏᴜ ʜᴀᴠᴇ ɴᴏ ʙᴏᴛs ᴀᴅᴅᴇᴅ.</b>")
+
+    text = "📋 <b>ʏᴏᴜʀ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛs:</b>\n━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    for i, b in enumerate(user_bots, 1):
+        status_icon = "🟢" if "Online" in b.get('status', '') else "🔴"
+        text += f"{i}. <b>{b['name']}</b> (@{b.get('username', 'bot')})\n"
+        text += f"   └ sᴛᴀᴛᴜs: {status_icon} <code>{b.get('status', 'Unknown')}</code>\n\n"
+    
+    await message.reply(text, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True)
+
+# --- 𝙻𝙾𝙶𝚂 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 (𝙾𝚆𝙽𝙴𝚁 𝙾𝙽𝙻𝚈) ---
+@Client.on_message(filters.command("logs") & filters.user(Config.OWNER_ID))
+async def logs_cmd(client, message):
+    try:
+        with open("bot.log", "r") as f:
+            lines = f.readlines()
+            last_logs = "".join(lines[-15:])
+            await message.reply(f"📄 <b>ʀᴇᴄᴇɴᴛ sʏsᴛᴇᴍ ʟᴏɢs:</b>\n\n<code>{last_logs}</code>", parse_mode=enums.ParseMode.HTML)
+    except FileNotFoundError:
+        await message.reply("❌ <b>ʟᴏɢ ғɪʟᴇ ɴᴏᴛ ғᴏᴜɴᴅ.</b>")
 
 # --- 𝙰𝙳𝙳 𝙱𝙾𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
 @Client.on_message(filters.command("addbot") & filters.private)
@@ -90,33 +115,19 @@ async def on_add(client, message):
     except Exception as e: 
         await progress.edit(f"❌ ᴇʀʀᴏʀ: <code>{e}</code>")
 
-# --- 𝙱𝚁𝙾𝙰𝙳𝙲𝙰𝚂𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
-@Client.on_message(filters.command("broadcast") & filters.user(Config.OWNER_ID))
-async def broadcast_handler(client, message):
-    if not message.reply_to_message: 
-        return await message.reply("⚠️ ʀᴇᴘʟʏ ᴛᴏ ᴀ ᴍᴇssᴀɢᴇ ᴛᴏ ʙʀᴏᴀᴅᴄᴀsᴛ.")
+# --- 𝚁𝙴𝙼𝙾𝚅𝙴 𝙱𝙾𝚃 ---
+@Client.on_message(filters.command("removebot") & filters.private)
+async def on_remove(client, message):
+    user_id = message.from_user.id
+    match = re.search(r'"([^"]+)"', message.text)
+    name = match.group(1).strip() if match else message.text.split(None, 1)[1] if len(message.command) > 1 else None
     
-    status_msg = await message.reply("📡 ʙʀᴏᴀᴅᴄᴀsᴛɪɴɢ...")
-    all_users = await get_all_users()
-    count, failed = 0, 0
-    
-    async for user in all_users:
-        try:
-            await message.reply_to_message.copy(user['user_id'])
-            count += 1
-            await asyncio.sleep(0.05) # Faster but safe
-        except FloodWait as e:
-            await asyncio.sleep(e.value)
-            await message.reply_to_message.copy(user['user_id'])
-            count += 1
-        except Exception: 
-            failed += 1
-            
-    await status_msg.edit(
-        f"📢 <b>ʙʀᴏᴀᴅᴄᴀsᴛ ᴄᴏᴍᴘʟᴇᴛᴇᴅ!</b>\n\n"
-        f"<blockquote>✅ sᴇɴᴛ ᴛᴏ: <code>{count}</code>\n"
-        f"❌ ғᴀɪʟᴇᴅ: <code>{failed}</code></blockquote>"
-    )
+    if not name:
+        return await message.reply("❌ ᴜsᴀɢᴇ: <code>/removebot \"Bot Name\"</code>")
+
+    await remove_bot(user_id, name)
+    await refresh_monitor(user_id)
+    await message.reply(f"🗑️ <b>sᴜᴄᴄᴇssғᴜʟʟʏ ʀᴇᴍᴏᴠᴇᴅ:</b> <code>{name}</code>")
 
 # --- 𝚂𝙴𝚃 𝙸𝙽𝚃𝙴𝚁𝚅𝙰𝙻 ---
 @Client.on_message(filters.command("set_interval") & filters.private)
@@ -135,21 +146,6 @@ async def set_interval(client, message):
         f"<blockquote>ʏᴏᴜʀ ʙᴏᴛs ᴡɪʟʟ ʙᴇ ᴄʜᴇᴄᴋᴇᴅ ᴇᴠᴇʀʏ <b>{args[1]} ᴍɪɴᴜᴛᴇs</b>.</blockquote>"
     )
 
-# --- 𝚁𝙴𝙼𝙾𝚅𝙴 𝙱𝙾𝚃 ---
-@Client.on_message(filters.command("removebot") & filters.private)
-async def on_remove(client, message):
-    user_id = message.from_user.id
-    # Check for quotes first, fallback to text after command
-    match = re.search(r'"([^"]+)"', message.text)
-    name = match.group(1).strip() if match else message.text.split(None, 1)[1] if len(message.command) > 1 else None
-    
-    if not name:
-        return await message.reply("❌ ᴜsᴀɢᴇ: <code>/removebot \"Bot Name\"</code>")
-
-    await remove_bot(user_id, name)
-    await refresh_monitor(user_id)
-    await message.reply(f"🗑️ <b>sᴜᴄᴄᴇssғᴜʟʟʏ ʀᴇᴍᴏᴠᴇᴅ:</b> <code>{name}</code>")
-
 # --- 𝚂𝙴𝚃 𝙻𝙸𝙽𝙺 ---
 @Client.on_message(filters.command("set_link") & filters.private)
 async def on_set_link(client, message):
@@ -162,7 +158,55 @@ async def on_set_link(client, message):
     await refresh_monitor(user_id)
     await message.reply("✅ <b>sᴛᴀᴛᴜs ʟɪɴᴋ ᴜᴘᴅᴀᴛᴇᴅ!</b>\n<blockquote>ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ ᴘᴏsᴛ ᴡɪʟʟ ɴᴏᴡ ʙᴇ ᴜᴘᴅᴀᴛᴇᴅ ʟɪᴠᴇ.</blockquote>")
 
-# --- 𝙳𝙰𝚂𝙷𝙱𝙾𝙰𝚁𝙳 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
+# --- 𝙷𝙴𝙻𝙿 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
+@Client.on_message(filters.command("help") & filters.private)
+async def help_cmd(client, message):
+    help_text = (
+        "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜsᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
+        "🚀 <b>ǫᴜɪᴄᴋ sᴇᴛᴜᴘ:</b>\n"
+        "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀs ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
+        "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇssᴀɢᴇ ʟɪɴᴋ ғʀᴏᴍ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ.\n"
+        "𝟹. ᴜsᴇ <code>/set_link</code> + ᴛʜᴀᴛ ʟɪɴᴋ.\n"
+        "𝟺. ᴜsᴇ <code>/addbot</code> @username URL.</blockquote>\n\n"
+        "📊 <b>ᴄᴏᴍᴍᴀɴᴅs:</b>\n"
+        "• <b>/addbot</b> - ᴀᴅᴅ ʙᴏᴛ ᴛᴏ ʟɪsᴛ\n"
+        "• <b>/removebot</b> - ʀᴇᴍᴏᴠᴇ ᴀ ʙᴏᴛ\n"
+        "• <b>/list</b> - sʜᴏᴡ ᴀʟʟ ʏᴏᴜʀ ʙᴏᴛs\n"
+        "• <b>/set_interval</b> - sᴇᴛ 𝟸/𝟻 ᴍɪɴ ᴄʜᴇᴄᴋs\n"
+        "• <b>/dashboard</b> - ɢᴇᴛ ʏᴏᴜʀ ᴡᴇʙ ʟɪɴᴋ\n"
+        "• <b>/logs</b> - ᴠɪᴇᴡ sʏsᴛᴇᴍ ʟᴏɢs"
+    )
+    await message.reply(help_text, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True)
+
+# --- 𝙱𝚁𝙾𝙰𝙳𝙲𝙰𝚂𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
+@Client.on_message(filters.command("broadcast") & filters.user(Config.OWNER_ID))
+async def broadcast_handler(client, message):
+    if not message.reply_to_message: 
+        return await message.reply("⚠️ ʀᴇᴘʟʏ ᴛᴏ ᴀ ᴍᴇssᴀɢᴇ ᴛᴏ ʙʀᴏᴀᴅᴄᴀsᴛ.")
+    
+    status_msg = await message.reply("📡 ʙʀᴏᴀᴅᴄᴀsᴛɪɴɢ...")
+    all_users = await get_all_users()
+    count, failed = 0, 0
+    
+    async for user in all_users:
+        try:
+            await message.reply_to_message.copy(user['user_id'])
+            count += 1
+            await asyncio.sleep(0.05)
+        except FloodWait as e:
+            await asyncio.sleep(e.value)
+            await message.reply_to_message.copy(user['user_id'])
+            count += 1
+        except Exception: 
+            failed += 1
+            
+    await status_msg.edit(
+        f"📢 <b>ʙʀᴏᴀᴅᴄᴀsᴛ ᴄᴏᴍᴘʟᴇᴛᴇᴅ!</b>\n\n"
+        f"<blockquote>✅ sᴇɴᴛ ᴛᴏ: <code>{count}</code>\n"
+        f"❌ ғᴀɪʟᴇᴅ: <code>{failed}</code></blockquote>"
+    )
+
+# --- 𝙳𝙰𝚂𝙷𝙱𝙾𝙰𝚁𝙳 & 𝚂𝚃𝙰𝚃𝚄𝚂 ---
 @Client.on_message(filters.command("dashboard") & filters.private)
 async def dash_cmd(client, message):
     user_id = message.from_user.id
@@ -175,35 +219,11 @@ async def dash_cmd(client, message):
         ])
     )
 
-# --- 𝙷𝙴𝙻𝙿 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
-@Client.on_message(filters.command("help") & filters.private)
-async def help_cmd(client, message):
-    help_text = (
-        "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜsᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
-        "🚀 <b>ǫᴜɪᴄᴋ sᴇᴛᴜᴘ:</b>\n"
-        "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀs ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
-        "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇssᴀɢᴇ ʟɪɴᴋ ғʀᴏᴍ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ.\n"
-        "𝟹. ᴜsᴇ <code>/set_link</code> + ᴛʜᴀᴛ ʟɪɴᴋ.\n"
-        "𝟺. ᴜsᴇ <code>/addbot</code> @username URL.</blockquote>\n\n"
-        "📊 <b>ᴄᴏᴍᴍᴀɴᴅs:</b>\n"
-        "• /addbot - ᴀᴅᴅ ʙᴏᴛ ᴛᴏ ʟɪsᴛ\n"
-        "• /removebot - ʀᴇᴍᴏᴠᴇ ᴀ ʙᴏᴛ\n"
-        "• /list - sʜᴏᴡ ᴀʟʟ ʙᴏᴛs\n"
-        "• /set_interval - sᴇᴛ 𝟸/𝟻 ᴍɪɴ ᴄʜᴇᴄᴋs\n"
-        "• /dashboard - ɢᴇᴛ ʏᴏᴜʀ ᴡᴇʙ ʟɪɴᴋ"
-    )
-    await message.reply(help_text, disable_web_page_preview=True)
-
 @Client.on_message(filters.command("status"))
 async def status_handler(client, message):
-    # Web URL from your config
-    base_url = Config.WEB_URL # Ensure this is like https://your-site.com
+    base_url = "https://infinity-monitor-bot-ug.koyeb.app"
     user_id = message.from_user.id
-
-    # 1. Stats URL (Requires Key Login)
     stats_url = f"{base_url}/stats"
-    
-    # 2. Personal Dashboard (No key needed now)
     dash_url = f"{base_url}/dashboard/{user_id}"
 
     keyboard = InlineKeyboardMarkup([
@@ -212,6 +232,7 @@ async def status_handler(client, message):
     ])
 
     await message.reply_text(
-        "📊 **Bot Monitoring System**\n\nClick below to monitor your bots or view global network statistics.",
-        reply_markup=keyboard
+        "📊 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀɪɴɢ sʏsᴛᴇᴍ</b>\n\nᴄʟɪᴄᴋ ʙᴇʟᴏᴡ ᴛᴏ ᴍᴏɴɪᴛᴏʀ ʏᴏᴜʀ ʙᴏᴛs ᴏʀ ᴠɪᴇᴡ ɢʟᴏʙᴀʟ ɴᴇᴛᴡᴏʀᴋ sᴛᴀᴛɪsᴛɪᴄs.",
+        reply_markup=keyboard,
+        parse_mode=enums.ParseMode.HTML
     )

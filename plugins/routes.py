@@ -51,13 +51,18 @@ async def stats_page(request: Request):
 # 📡 Stats Verify (POST)
 @router.post("/stats")
 async def verify_stats(request: Request, key: str = Form(...)):
+    # Check if the key matches Config.WEB_ACCESS_KEY
     if key != Config.WEB_ACCESS_KEY:
-        # Path: templates/denied.html
+        # Proceed to return the denied.html file as requested 
         return templates.TemplateResponse("denied.html", {"request": request}, status_code=403)
 
+    # If key matches, proceed to show stats 
     total = await bots_col.count_documents({})
     online = await bots_col.count_documents({"status": "✅ Online"})
     
     return templates.TemplateResponse("stats_view.html", {
-        "request": request, "total": total, "online": online, "offline": total - online
+        "request": request, 
+        "total": total, 
+        "online": online, 
+        "offline": total - online
     })
