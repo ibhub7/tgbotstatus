@@ -1,46 +1,156 @@
-# Telegram Bot Status Monitor
+# 🚀 Telegram Bot Status Monitor
 
-A professional status monitor that pings your bots hosted on Koyeb/Render and updates a live status message in a Telegram channel.
+A powerful and professional status monitoring system that continuously checks your bots (hosted on platforms like Koyeb or Render) and updates a live status message in a Telegram channel.
 
-## Features
-- **Auto-Update**: Edits a single message every 5 minutes.
-- **Persistent Storage**: Uses MongoDB to store your bot list.
-- **Timezone Support**: Displays updates in Asia/Kolkata time.
-- **Clean UI**: Minimalist status report without messy URLs.
+---
 
-## Commands (Private Chat)
-- `/addbot "Bot Name" URL` - Add a new bot (use quotes for names with spaces).
-- `/removebot "Bot Name"` - Remove a bot from monitoring.
+## ✨ Features
 
-## Deployment
-1. Set up a MongoDB Atlas cluster.
-2. Get your `API_ID` and `API_HASH` from my.telegram.org.
-3. Deploy to Koyeb using the provided `Dockerfile`.
-4. Set all Environment Variables in the Koyeb dashboard.
+* 🔄 **Auto Update**
+  Automatically edits a single Telegram message at regular intervals (default: every 5 minutes).
 
+* 🗄️ **Persistent Storage**
+  Uses MongoDB to securely store and manage your bot list.
+
+* 🌍 **Timezone Support**
+  Displays timestamps in your configured timezone (default: Asia/Kolkata).
+
+* 🎯 **Clean Dashboard UI**
+  Minimal and user-friendly web interface with no messy URLs.
+
+* ⚡ **FastAPI + Pyrogram Integration**
+  Combines web dashboard + Telegram bot in one system.
+
+---
+
+## 🤖 Bot Commands (Private Chat)
+
+| Command                  | Description                                      |
+| ------------------------ | ------------------------------------------------ |
+| `/addbot "Bot Name" URL` | Add a new bot (use quotes for names with spaces) |
+| `/removebot "Bot Name"`  | Remove a bot from monitoring                     |
+| `/list`                  | View all added bots                              |
+| `/status`                | Check current bot statuses                       |
+
+---
+
+## 🌐 Web Features
+
+* 📊 User Dashboard: `/dashboard/{user_id}`
+* 🔐 Admin Stats Panel: `/stats`
+* 📡 Live bot status monitoring
+* 🟢 Online / 🔴 Offline indicators
+
+---
+
+## ⚙️ Deployment Guide
+
+### 1. MongoDB Setup
+
+* Create a MongoDB Atlas cluster
+* Get your connection URI
+
+---
+
+### 2. Telegram API Setup
+
+Get your credentials from: https://my.telegram.org
+
+* `API_ID`
+* `API_HASH`
+* `BOT_TOKEN`
+
+---
+
+### 3. Deploy to Koyeb / Render
+
+* Use the provided `Dockerfile`
+* Set deployment type: **Web Service**
+
+---
+
+### 4. Environment Variables
+
+Set the following variables in your deployment platform:
+
+```env
+API_ID=your_api_id
+API_HASH=your_api_hash
+BOT_TOKEN=your_bot_token
+MONGO_URI=your_mongodb_uri
+TIME_ZONE=Asia/Kolkata
+WEB_ACCESS_KEY=your_secret_key
+```
+
+---
+
+## 📁 Project Structure
+
+```
 /app (Root)
-├── bot.py                # Bot initialization & background monitoring logic 
-├── main.py               # FastAPI entry point & lifespan manager 
-├── database.py           # MongoDB collections & helper functions 
-├── config.py             # Environment variables & configuration 
-├── Dockerfile            # Containerization instructions [cite: 1, 2]
-├── Procfile              # Deployment command for web/worker [cite: 4]
-├── requirements.txt      # Python dependencies [cite: 5]
-├── .dockerignore         # Files excluded from Docker builds 
-├── README.MD             # Project documentation & command guide 
+├── bot.py                # Bot initialization & monitoring loop
+├── main.py               # FastAPI entry point
+├── database.py           # MongoDB helpers
+├── config.py             # Environment configs
+├── Dockerfile            # Container setup
+├── Procfile              # Deployment command
+├── requirements.txt      # Dependencies
+├── README.md             # Documentation
 │
-├── plugins/              # Pyrogram Smart-Plugins & Web Routes 
-│   ├──--inity--.py 
-│   ├── commands.py       # Bot command handlers (/start, /list, /addbot) 
-│   ├── routes.py         # FastAPI APIRouter for web endpoints 
-│   ├──ex_mongo_manager.py
-│   └── imongo_manager.py  # Administrative MongoDB utility script 
+├── plugins/              # Bot + Web logic
+│   ├── __init__.py
+│   ├── commands.py       # Telegram commands
+│   ├── routes.py         # FastAPI routes
+│   ├── ex_mongo_manager.py
+│   └── imongo_manager.py
 │
-└── templates/                  # Frontend HTML Templates 
-    ├── homepage.html     # Main landing page 
-    ├── startup.html      # Dynamic user status dashboard 
-    ├── stats_login.html  # Admin statistics login page 
-    ├── stats_view.html   # Global network statistics view 
+└── templates/            # HTML templates
+    ├── homepage.html
+    ├── startup.html
+    ├── stats_login.html
+    ├── stats_view.html
     ├── dashboard.html
     ├── index.html
-    └── denied.html       # Access denied error page
+    └── denied.html
+```
+
+---
+
+## 🔐 Security
+
+* Admin routes are protected using `WEB_ACCESS_KEY`
+* Unauthorized access returns a custom **Access Denied** page
+
+---
+
+## 🧠 How It Works
+
+1. Bots are added via Telegram commands
+2. URLs are stored in MongoDB
+3. Background task pings each bot periodically
+4. Status message in Telegram is updated
+5. Dashboard reflects real-time bot status
+
+---
+
+## 🚀 Future Improvements
+
+* 🔄 Live auto-refresh dashboard (AJAX)
+* 🔐 Full login system (sessions/cookies)
+* 📈 Analytics & uptime tracking
+* 🎨 Modern UI (cards, charts, graphs)
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome!
+Feel free to open issues or suggest features.
+
+---
+
+## 📜 License
+
+This project is open-source and free to use.
+
+---
