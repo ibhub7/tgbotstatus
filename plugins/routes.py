@@ -15,7 +15,6 @@ templates = Jinja2Templates(directory=os.path.join(base_dir, "templates"))
 # 🏠 Homepage
 @router.get("/")
 async def homepage(request: Request):
-    # Pass 'request' as a keyword argument or as the first positional argument
     return templates.TemplateResponse(
         request=request, 
         name="homepage.html", 
@@ -39,35 +38,48 @@ async def dashboard(request: Request, user_id: int):
                 "status": b.get("status", "❌ Offline")
             })
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error fetching bots: {e}")
 
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request, 
-        "bots": bot_list, 
-        "user_id": user_id,
-        "time": now.strftime("%H:%M:%S")
-    })
+    # FIX: Explicitly passing request and name as keywords
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard.html",
+        context={
+            "bots": bot_list, 
+            "user_id": user_id,
+            "time": now.strftime("%H:%M:%S")
+        }
+    )
 
 # 📡 Stats Login (GET)
 @router.get("/stats")
 async def stats_page(request: Request):
-    return templates.TemplateResponse("stats_login.html", {"request": request})
+    return templates.TemplateResponse(
+        request=request, 
+        name="stats_login.html", 
+        context={}
+    )
 
 # 📡 Stats Verify (POST)
 @router.post("/stats")
 async def verify_stats(request: Request, key: str = Form(...)):
-    # Check if the key matches Config.WEB_ACCESS_KEY
     if key != Config.WEB_ACCESS_KEY:
-        # Proceed to return the denied.html file as requested 
-        return templates.TemplateResponse("denied.html", {"request": request}, status_code=403)
+        return templates.TemplateResponse(
+            request=request, 
+            name="denied.html", 
+            context={}, 
+            status_code=403
+        )
 
-    # If key matches, proceed to show stats 
     total = await bots_col.count_documents({})
     online = await bots_col.count_documents({"status": "✅ Online"})
     
-    return templates.TemplateResponse("stats_view.html", {
-        "request": request, 
-        "total": total, 
-        "online": online, 
-        "offline": total - online
-    })
+    return templates.TemplateResponse(
+        request=request, 
+        name="stats_view.html", 
+        context={
+            "total": total, 
+            "online": online, 
+            "offline": total - online
+        }
+    )
