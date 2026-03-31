@@ -12,4 +12,4 @@ class Config:
     WEB_ACCESS_KEY = os.getenv("WEB_ACCESS_KEY", "ipo") 
     
     TIME_ZONE = "Asia/Kolkata"
-    CHECK_INTERVAL = 300 #5 min
+    CHECK_INTERVAL = 1800 #30 min
