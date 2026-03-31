@@ -5,8 +5,9 @@ from pyrogram.errors import FloodWait
 from database import (
     add_bot, remove_bot, get_user_bots, 
     update_user_settings, get_user_config, 
-    add_user, get_all_users, bots_col
-)
+    add_user, get_all_users, bots_col,
+    registered_users
+) 
 from config import Config
 
 logger = logging.getLogger("MonitorBot")
@@ -283,6 +284,42 @@ async def show_help_cb(client, callback_query):
     )
 
     await callback_query.answer()
+
+# --- STATS COMMAND (OWNER ONLY) ---
+@Client.on_message(filters.command("stats") & filters.user(Config.OWNER_ID))
+async def stats_cmd(client, message):
+    try:
+        # Fast counts (no loops 🚀)
+        total_users = await registered_users.count_documents({})
+        total_bots = await bots_col.count_documents({})
+
+        # Status breakdown
+        online_bots = await bots_col.count_documents({
+            "status": {"$regex": "Online"}
+        })
+        offline_bots = total_bots - online_bots
+
+        # Unique users who added bots (pro stat 🔥)
+        unique_bot_users = len(await bots_col.distinct("user_id"))
+
+        text = (
+            "📊 <b>ʙᴏᴛ sᴛᴀᴛs ᴅᴀsʜʙᴏᴀʀᴅ</b>\n\n"
+            f"<blockquote>"
+            f"👥 ᴛᴏᴛᴀʟ ᴜsᴇʀs: <b>{total_users}</b>\n"
+            f"🧑‍💻 ᴀᴄᴛɪᴠᴇ ᴜsᴇʀs: <b>{unique_bot_users}</b>\n\n"
+            f"🤖 ᴛᴏᴛᴀʟ ʙᴏᴛs: <b>{total_bots}</b>\n"
+            f"🟢 ᴏɴʟɪɴᴇ: <b>{online_bots}</b>\n"
+            f"🔴 ᴏғғʟɪɴᴇ: <b>{offline_bots}</b>"
+            f"</blockquote>"
+        )
+
+        await message.reply(
+            text,
+            parse_mode=enums.ParseMode.HTML
+        )
+
+    except Exception as e:
+        await message.reply(f"❌ Error: <code>{e}</code>")
 
 # --- SHOW HELP (BUTTON CALLBACK) ---
 @Client.on_callback_query(filters.regex("show_help"))
