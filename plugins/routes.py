@@ -48,6 +48,7 @@ async def dashboard(request: Request, user_id: int, key: str = None):
 
     # ✅ FIXED: Using 'name' and 'context' keywords explicitly
     return templates.TemplateResponse(
+        request=request,
         name="startup.html", 
         context={
             "request": request, 
