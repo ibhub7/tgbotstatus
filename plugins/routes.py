@@ -15,7 +15,12 @@ templates = Jinja2Templates(directory=os.path.join(base_dir, "templates"))
 # 🏠 Homepage
 @router.get("/")
 async def homepage(request: Request):
-    return templates.TemplateResponse("homepage.html", {"request": request})
+    # Pass 'request' as a keyword argument or as the first positional argument
+    return templates.TemplateResponse(
+        request=request, 
+        name="homepage.html", 
+        context={} 
+    )
 
 # 📊 Dashboard (Direct access via User ID)
 @router.get("/dashboard/{user_id}")
