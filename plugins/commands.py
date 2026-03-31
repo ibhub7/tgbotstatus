@@ -236,7 +236,7 @@ async def dash_cmd(client, message):
         ])
     )
 
-@Client.on_message(filters.command("status"))
+@Client.on_message(filters.command("status") & filters.user(Config.OWNER_ID))
 async def status_handler(client, message):
     base_url = "https://infinity-monitor-bot-ug.koyeb.app"
     user_id = message.from_user.id
@@ -253,3 +253,69 @@ async def status_handler(client, message):
         reply_markup=keyboard,
         parse_mode=enums.ParseMode.HTML
     )
+
+# --- SHOW HELP (BUTTON CALLBACK) ---
+@Client.on_callback_query(filters.regex("show_help"))
+async def show_help_cb(client, callback_query):
+    help_text = (
+        "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜsᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
+        "🚀 <b>ǫᴜɪᴄᴋ sᴇᴛᴜᴘ:</b>\n"
+        "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀs ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
+        "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇssᴀɢᴇ ʟɪɴᴋ.\n"
+        "𝟹. ᴜsᴇ <code>/set_link</code> + ʟɪɴᴋ.\n"
+        "𝟺. ᴜsᴇ <code>/addbot</code> @username URL.</blockquote>\n\n"
+        "📊 <b>ᴄᴏᴍᴍᴀɴᴅs:</b>\n"
+        "• /addbot - ᴀᴅᴅ ʙᴏᴛ\n"
+        "• /removebot - ʀᴇᴍᴏᴠᴇ ʙᴏᴛ\n"
+        "• /list - ʟɪsᴛ ʙᴏᴛs\n"
+        "• /set_interval - 2/5 ᴍɪɴ\n"
+        "• /dashboard - ᴡᴇʙ ᴜɪ\n"
+        "• /logs - ᴏᴡɴᴇʀ"
+    )
+
+    await callback_query.message.edit_text(
+        help_text,
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("✅ Understand", callback_data="close_help")]
+        ]),
+        parse_mode=enums.ParseMode.HTML,
+        disable_web_page_preview=True
+    )
+
+    await callback_query.answer()
+
+# --- SHOW HELP (BUTTON CALLBACK) ---
+@Client.on_callback_query(filters.regex("show_help"))
+async def show_help_cb(client, callback_query):
+    help_text = (
+        "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜsᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
+        "🚀 <b>ǫᴜɪᴄᴋ sᴇᴛᴜᴘ:</b>\n"
+        "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀs ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
+        "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇssᴀɢᴇ ʟɪɴᴋ.\n"
+        "𝟹. ᴜsᴇ <code>/set_link</code> + ʟɪɴᴋ.\n"
+        "𝟺. ᴜsᴇ <code>/addbot</code> @username URL.</blockquote>\n\n"
+        "📊 <b>ᴄᴏᴍᴍᴀɴᴅs:</b>\n"
+        "• /addbot - ᴀᴅᴅ ʙᴏᴛ\n"
+        "• /removebot - ʀᴇᴍᴏᴠᴇ ʙᴏᴛ\n"
+        "• /list - ʟɪsᴛ ʙᴏᴛs\n"
+        "• /set_interval - 2/5 ᴍɪɴ\n"
+        "• /dashboard - ᴡᴇʙ ᴜɪ\n"
+        "• /logs - ᴏᴡɴᴇʀ"
+    )
+
+    await callback_query.message.edit_text(
+        help_text,
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("✅ Understand", callback_data="close_help")]
+        ]),
+        parse_mode=enums.ParseMode.HTML,
+        disable_web_page_preview=True
+    )
+
+    await callback_query.answer()
+
+# --- CLOSE HELP ---
+@Client.on_callback_query(filters.regex("close_help"))
+async def close_help_cb(client, callback_query):
+    await callback_query.message.delete()
+    await callback_query.answer("Thanks ✅")
