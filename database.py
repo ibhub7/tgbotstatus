@@ -39,6 +39,25 @@ async def delete_all_user_bots(user_id):
 async def get_user_config(user_id):
     return await users_settings.find_one({"user_id": user_id})
 
+# --- USER SETTINGS & BROADCAST ---
+async def add_user(user_id):
+    """Save user for broadcast when they /start"""
+    await registered_users.update_one({"user_id": user_id}, {"$set": {"user_id": user_id}}, upsert=True)
+
+async def get_all_users():
+    """Returns a cursor of all registered users for broadcasting"""
+    return registered_users.find({})
+
+async def update_user_settings(user_id, interval=None, post_link=None):
+    data = {}
+    if interval: data["interval"] = interval
+    if post_link: data["post_link"] = post_link
+    await users_settings.update_one({"user_id": user_id}, {"$set": data}, upsert=True)
+    
+async def delete_all_user_bots(user_id):
+    """Useful if a user wants to reset their account"""
+    await bots_col.delete_many({"user_id": user_id})
+
 async def get_user_config_web(user_id):
     """Alias for dashboard to prevent import errors"""
     return await get_user_config(user_id)
