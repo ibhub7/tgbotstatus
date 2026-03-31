@@ -193,3 +193,25 @@ async def help_cmd(client, message):
         "• /dashboard - ɢᴇᴛ ʏᴏᴜʀ ᴡᴇʙ ʟɪɴᴋ"
     )
     await message.reply(help_text, disable_web_page_preview=True)
+
+@Client.on_message(filters.command("status"))
+async def status_handler(client, message):
+    # Web URL from your config
+    base_url = Config.WEB_URL # Ensure this is like https://your-site.com
+    user_id = message.from_user.id
+
+    # 1. Stats URL (Requires Key Login)
+    stats_url = f"{base_url}/stats"
+    
+    # 2. Personal Dashboard (No key needed now)
+    dash_url = f"{base_url}/dashboard/{user_id}"
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🌍 View Global Stats", url=stats_url)],
+        [InlineKeyboardButton("🖥 Open My Dashboard", url=dash_url)]
+    ])
+
+    await message.reply_text(
+        "📊 **Bot Monitoring System**\n\nClick below to monitor your bots or view global network statistics.",
+        reply_markup=keyboard
+    )
