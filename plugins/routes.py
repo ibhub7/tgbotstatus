@@ -41,7 +41,7 @@ async def dashboard(request: Request, user_id: int):
     except Exception as e:
         print(f"Error: {e}")
 
-    return templates.TemplateResponse("startup.html", {
+    return templates.TemplateResponse("dashboard.html", {
         "request": request, 
         "bots": bot_list, 
         "user_id": user_id,
