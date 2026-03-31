@@ -2,23 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stats Access</title>
     <style>
         body { background: #0f0f0f; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #1a1a1a; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); text-align: center; width: 320px; border: 1px solid #333; }
-        input { width: 90%; padding: 12px; margin: 20px 0; border-radius: 6px; border: 1px solid #444; background: #222; color: white; outline: none; }
-        button { background: #0088cc; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #006699; }
+        .card { background: #1a1a1a; padding: 30px; border-radius: 12px; text-align: center; border: 1px solid #333; }
+        input { width: 80%; padding: 12px; margin: 20px 0; border-radius: 6px; background: #222; color: white; border: 1px solid #444; }
+        button { background: #0088cc; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>🔒 Restricted Area</h2>
-        <p style="color: #888;">Enter Web Access Key to view global stats</p>
+        <h3>🔒 Protected Stats</h3>
         <form method="POST">
-            <input type="password" name="key" placeholder="Access Key..." required>
-            <button type="submit">Unlock Statistics</button>
+            <input type="password" name="key" placeholder="Enter Access Key" required>
+            <button type="submit">Unlock</button>
         </form>
     </div>
 </body>
