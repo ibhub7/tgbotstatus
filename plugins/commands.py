@@ -71,13 +71,30 @@ async def list_cmd(client, message):
     if not user_bots:
         return await message.reply("❌ <b>ʏᴏᴜ ʜᴀᴠᴇ ɴᴏ ʙᴏᴛs ᴀᴅᴅᴇᴅ.</b>")
 
-    text = "📋 <b>ʏᴏᴜʀ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛs:</b>\n━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    for i, b in enumerate(user_bots, 1):
-        status_icon = "🟢" if "Online" in b.get('status', '') else "🔴"
-        text += f"{i}. <b>{b['name']}</b> (@{b.get('username', 'bot')})\n"
-        text += f"   └ sᴛᴀᴛᴜs: {status_icon} <code>{b.get('status', 'Unknown')}</code>\n\n"
+    # Header as seen in the image
+    text = "📋 <b>ʏᴏᴜʀ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛs</b>\n\n"
     
-    await message.reply(text, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True)
+    for i, b in enumerate(user_bots, 1):
+        name = b.get('name', 'Unknown')
+        username = b.get('username', 'bot')
+        status = b.get('status', '❌ Offline')
+        
+        # Determine the status icon based on the status string
+        icon = "✅" if "Online" in status else "❌"
+        
+        # Format matching the image:
+        # 1. Number and Bold Bot Name (Hyperlinked to Telegram DM)
+        # 2. Blockquote with a yellow-style bar and Small Caps status text
+        text += (
+            f"{i}. <b><a href='https://t.me/{username}'>{name}</a></b>\n"
+            f"<blockquote>sᴛᴀᴛᴜs: {icon} {status} ❞</blockquote>\n"
+        )
+    
+    await message.reply(
+        text, 
+        parse_mode=enums.ParseMode.HTML, 
+        disable_web_page_preview=True
+    )
 
 # --- 𝙻𝙾𝙶𝚂 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 (𝙾𝚆𝙽𝙴𝚁 𝙾𝙽𝙻𝚈) ---
 @Client.on_message(filters.command("logs") & filters.user(Config.OWNER_ID))
