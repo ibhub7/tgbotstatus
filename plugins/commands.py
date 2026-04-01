@@ -1,4 +1,4 @@
-import re, asyncio, logging
+import re, asyncio, logging, sys
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from pyrogram.errors import FloodWait
@@ -97,16 +97,23 @@ async def list_cmd(client, message):
         disable_web_page_preview=True
     )
 
-# --- 𝙻𝙾𝙶𝚂 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 (𝙾𝚆𝙽𝙴𝚁 𝙾𝙽𝙻𝚈) ---
+# --- 𝙻𝙾𝙶𝚂 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 (𝚂𝙴𝙽𝙳 𝙰𝚂 𝙵𝙸𝙻𝙴) ---
 @Client.on_message(filters.command("logs") & filters.user(Config.OWNER_ID))
 async def logs_cmd(client, message):
-    try:
-        with open("bot.log", "r") as f:
-            lines = f.readlines()
-            last_logs = "".join(lines[-15:])
-            await message.reply(f"📄 <b>ʀᴇᴄᴇɴᴛ sʏsᴛᴇᴍ ʟᴏɢs:</b>\n\n<code>{last_logs}</code>", parse_mode=enums.ParseMode.HTML)
-    except FileNotFoundError:
-        await message.reply("❌ <b>ʟᴏɢ ғɪʟᴇ ɴᴏᴛ ғᴏᴜɴᴅ.</b>")
+    log_file = "bot.log"
+    
+    if os.path.exists(log_file):
+        # Check file size (Telegram has a limit, but bot.log is usually small)
+        if os.path.getsize(log_file) > 0:
+            await message.reply_document(
+                document=log_file,
+                caption="📄 <b>sʏsᴛᴇᴍ ʟᴏɢ ғɪʟᴇ</b>\n<blockquote>Here are the latest internal logs.</blockquote>",
+                parse_mode=enums.ParseMode.HTML
+            )
+        else:
+            await message.reply("📭 <b>ʟᴏɢ ғɪʟᴇ ɪs ᴇᴍᴘᴛʏ.</b>")
+    else:
+        await message.reply("❌ <b>ʟᴏɢ ғɪʟᴇ ɴᴏᴛ ғᴏᴜɴᴅ ᴏɴ sᴇʀᴠᴇʀ.</b>")
 
 # --- 𝙰𝙳𝙳 𝙱𝙾𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
 @Client.on_message(filters.command("addbot") & filters.private)
@@ -320,6 +327,29 @@ async def stats_cmd(client, message):
 
     except Exception as e:
         await message.reply(f"❌ Error: <code>{e}</code>")
+
+# --- 𝚁𝙴𝚂𝚃𝙰𝚁𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 (𝙾𝚆𝙽𝙴𝚁 𝙾𝙽𝙻𝚈) ---
+@Client.on_message(filters.command("restart") & filters.user(Config.OWNER_ID))
+async def restart_bot(client, message):
+    msg = await message.reply("🔄 <b>ᴘʀᴏᴄᴇssɪɴɢ ʀᴇʙᴏᴏᴛ...</b>\n<blockquote>sʜᴜᴛᴛɪɴɢ ᴅᴏᴡɴ ᴀʟʟ ᴀᴄᴛɪᴠᴇ ᴍᴏɴɪᴛᴏʀ sᴇssɪᴏɴs...</blockquote>")
+    
+    try:
+        # Import active_tasks to clear them gracefully if possible
+        from bot import active_tasks
+        for task in active_tasks.values():
+            task.cancel()
+        logger.info("All monitoring tasks cancelled for manual restart.")
+    except Exception:
+        pass
+
+    await msg.edit("🚀 <b>ʙᴏᴛ ɪs ʀᴇsᴛᴀʀᴛɪɴɢ!</b>\n<blockquote>ɪ'ʟʟ ʙᴇ ʙᴀᴄᴋ ᴏɴʟɪɴᴇ ɪɴ ᴀ ғᴇᴡ sᴇᴄᴏɴᴅs.</blockquote>")
+    
+    # Graceful exit of the Pyrogram client
+    await client.stop()
+    
+    # Hard restart: replaces the current process with a new one
+    os.execl(sys.executable, sys.executable, *sys.argv)
+
 
 # --- SHOW HELP (BUTTON CALLBACK) ---
 @Client.on_callback_query(filters.regex("show_help"))
