@@ -187,12 +187,40 @@ async def get_info(client, message):
         f"<blockquote>👤 ɴᴀᴍᴇ: {user.first_name}\n🆔 ɪᴅ: <code>{user.id}</code>\n🔗 @{user.username or 'None'}</blockquote>"
     )
 
-@Client.on_message(filters.command("finfo"))
+# --- 𝙵𝙾𝚁𝚆𝙰𝚁𝙳 𝙸𝙽𝙵𝙾 (𝙴𝙽𝙷𝙰𝙽𝙲𝙴𝙳) ---
+@Client.on_message(filters.command("finfo") & filters.private)
 async def get_finfo(client, message):
-    if not message.reply_to_message or not message.reply_to_message.forward_from:
-        return await message.reply("⚠️ ʀᴇᴘʟʏ ᴛᴏ ᴀ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇ.")
-    f = message.reply_to_message.forward_from
-    await message.reply(f"✉️ <b>ғᴏʀᴡᴀʀᴅ sᴏᴜʀᴄᴇ</b>\n<blockquote>👤 ɴᴀᴍᴇ: {f.first_name}\n🆔 ɪᴅ: <code>{f.id}</code></blockquote>")
+    msg = message.reply_to_message
+
+    if not msg or not (msg.forward_from or msg.forward_sender_name or msg.forward_from_chat):
+        return await message.reply("⚠️ ʀᴇᴘʟʏ ᴛᴏ ᴀ <b>ғᴏʀᴡᴀʀᴅᴇᴅ</b> ᴍᴇssᴀɢᴇ ᴛᴏ ɢᴇᴛ sᴏᴜʀᴄᴇ ɪɴғᴏ.")
+
+    # Case 1: Real User (Privacy Off)
+    if msg.forward_from:
+        f = msg.forward_from
+        return await message.reply(
+            f"✉️ <b>ғᴏʀᴡᴀʀᴅ sᴏᴜʀᴄᴇ</b>\n"
+            f"<blockquote>👤 ɴᴀᴍᴇ: <a href='tg://user?id={f.id}'>{f.first_name}</a>\n"
+            f"🆔 ɪᴅ: <code>{f.id}</code></blockquote>",
+            disable_web_page_preview=True
+        )
+
+    # Case 2: User with Privacy Enabled
+    elif msg.forward_sender_name:
+        return await message.reply(
+            f"✉️ <b>ғᴏʀᴡᴀʀᴅ sᴏᴜʀᴄᴇ</b>\n"
+            f"<blockquote>👤 ɴᴀᴍᴇ: {msg.forward_sender_name}\n"
+            f"🆔 ɪᴅ: <code>ʜɪᴅᴅᴇɴ ʙʏ ᴜsᴇʀ</code></blockquote>"
+        )
+
+    # Case 3: Channel or Group
+    elif msg.forward_from_chat:
+        chat = msg.forward_from_chat
+        return await message.reply(
+            f"✉️ <b>ғᴏʀᴡᴀʀᴅ sᴏᴜʀᴄᴇ</b>\n"
+            f"<blockquote>📢 sᴏᴜʀᴄᴇ: {chat.title}\n"
+            f"🆔 ɪᴅ: <code>{chat.id}</code></blockquote>"
+        )
 
 # --- 𝚂𝙴𝚃 𝙸𝙽𝚃𝙴𝚁𝚅𝙰𝙻 ---
 @Client.on_message(filters.command("set_interval") & filters.private)
@@ -234,8 +262,8 @@ async def help_cmd(client, message):
         "𝟹. ᴜsᴇ <code>/set_link</code> + ᴛʜᴀᴛ ʟɪɴᴋ.\n"
         "𝟺. ᴜsᴇ <code>/addbot</code> @username URL.</blockquote>\n\n"
         "📊 <b>ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅs:</b>\n\n"
-        "• /addbot <code>@ᴜsᴇʀ URL</code> — ᴀᴅᴅ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏ ᴍᴏɴɪᴛᴏʀɪɴɢ ʟɪsᴛ\n"
-        "• /removebot <code>\"ɴᴀᴍᴇ\"</code> — ʀᴇᴍᴏᴠᴇ ᴀ sᴘᴇᴄɪғɪᴄ ʙᴏᴛ ʙʏ ɪᴛs ɴᴀᴍᴇ\n"
+        "• /addbot <code>@ᴜsᴇʀɴᴀᴍᴇ URL</code> — ᴀᴅᴅ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏ ᴍᴏɴɪᴛᴏʀɪɴɢ ʟɪsᴛ\n"
+        "• /removebot <code>\"@ᴜsᴇʀɴᴀᴍᴇ\"</code> — ʀᴇᴍᴏᴠᴇ ᴀ sᴘᴇᴄɪғɪᴄ ʙᴏᴛ ʙʏ ɪᴛs ɴᴀᴍᴇ\n"
         "• /deleteall <code>confirm</code> — ᴘᴜʀɢᴇ ᴀʟʟ ʏᴏᴜʀ ᴀᴅᴅᴇᴅ ʙᴏᴛs ᴀᴛ ᴏɴᴄᴇ\n"
         "• /list — sʜᴏᴡ ᴀʟʟ ʏᴏᴜʀ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛs ᴀɴᴅ sᴛᴀᴛᴜs\n"
         "• /set_interval <code>𝟸/𝟻</code> — ᴄʜᴏᴏsᴇ ᴄʜᴇᴄᴋɪɴɢ ᴅᴇʟᴀʏ ɪɴ ᴍɪɴᴜᴛᴇs\n"
