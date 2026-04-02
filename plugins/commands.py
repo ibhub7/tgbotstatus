@@ -1,4 +1,4 @@
-import re, asyncio, logging, sys
+import re, asyncio, logging, sys, os
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from pyrogram.errors import FloodWait
@@ -6,7 +6,7 @@ from database import (
     add_bot, remove_bot, get_user_bots, 
     update_user_settings, get_user_config, 
     add_user, get_all_users, bots_col,
-    registered_users
+    registered_users, delete_all_user_bots
 ) 
 from config import Config
 
@@ -72,14 +72,12 @@ async def list_cmd(client, message):
     if not user_bots:
         return await message.reply("❌ <b>ʏᴏᴜ ʜᴀᴠᴇ ɴᴏ ʙᴏᴛs ᴀᴅᴅᴇᴅ.</b>")
 
-    # Header as seen in the image
     text = "📋 <b>ʏᴏᴜʀ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛs</b>\n\n"
     
     for i, b in enumerate(user_bots, 1):
         name = b.get('name', 'Unknown')
         username = b.get('username', 'bot')
         status = b.get('status', '❌ Offline')
-        
         # Determine the status icon based on the status string
         icon = "✅" if "Online" in status else "❌"
         
@@ -103,7 +101,6 @@ async def logs_cmd(client, message):
     log_file = "bot.log"
     
     if os.path.exists(log_file):
-        # Check file size (Telegram has a limit, but bot.log is usually small)
         if os.path.getsize(log_file) > 0:
             await message.reply_document(
                 document=log_file,
@@ -140,19 +137,62 @@ async def on_add(client, message):
     except Exception as e: 
         await progress.edit(f"❌ ᴇʀʀᴏʀ: <code>{e}</code>")
 
-# --- 𝚁𝙴𝙼𝙾𝚅𝙴 𝙱𝙾𝚃 ---
+# --- 𝚁𝙴𝙼𝙾𝚅𝙴 𝙱𝙾𝚃 (𝙵𝙸𝚇𝙴𝙳) ---
 @Client.on_message(filters.command("removebot") & filters.private)
 async def on_remove(client, message):
     user_id = message.from_user.id
-    match = re.search(r'"([^"]+)"', message.text)
-    name = match.group(1).strip() if match else message.text.split(None, 1)[1] if len(message.command) > 1 else None
-    
-    if not name:
-        return await message.reply("❌ ᴜsᴀɢᴇ: <code>/removebot \"Bot Name\"</code>")
+    if len(message.command) < 2:
+        return await message.reply("❌ ᴜsᴀɢᴇ: <code>/removebot @username</code>")
 
-    await remove_bot(user_id, name)
+    # Clean the username (remove @ if present)
+    target_username = message.command[1].replace("@", "")
+
+    res = await remove_bot(user_id, target_username)
+    if res.deleted_count > 0:
+        await refresh_monitor(user_id)
+        await message.reply(f"🗑️ <b>sᴜᴄᴄᴇssғᴜʟʟʏ ʀᴇᴍᴏᴠᴇᴅ:</b> <code>@{target_username}</code>")
+    else:
+        await message.reply(f"⚠️ <b>ɴᴏᴛ ғᴏᴜɴᴅ:</b> <code>@{target_username}</code> ɪs ɴᴏᴛ ɪɴ ʏᴏᴜʀ ʟɪsᴛ.")
+
+
+# --- 𝙳𝙴𝙻𝙴𝚃𝙴 𝙰𝙻𝙻 𝙱𝙾𝚃𝚂 ---
+@Client.on_message(filters.command("deleteall") & filters.private)
+async def delete_all_cmd(client, message):
+    user_id = message.from_user.id
+    if "confirm" not in message.text.lower():
+        return await message.reply("⚠️ <b>ᴀʀᴇ ʏᴏᴜ sᴜʀᴇ?</b>\n\nᴛʜɪs ᴡɪʟʟ ʀᴇᴍᴏᴠᴇ ALL ʏᴏᴜʀ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛs.\nᴛʏᴘᴇ <code>/deleteall confirm</code> ᴛᴏ ᴘʀᴏᴄᴇᴇᴅ.")
+
+    res = await delete_all_user_bots(user_id)
     await refresh_monitor(user_id)
-    await message.reply(f"🗑️ <b>sᴜᴄᴄᴇssғᴜʟʟʏ ʀᴇᴍᴏᴠᴇᴅ:</b> <code>{name}</code>")
+    await message.reply(f"💥 <b>ᴀʟʟ ʙᴏᴛs ᴘᴜʀɢᴇᴅ!</b>\n<blockquote>ʀᴇᴍᴏᴠᴇᴅ <code>{res.deleted_count}</code> ʙᴏᴛs ғʀᴏᴍ ʏᴏᴜʀ ᴀᴄᴄᴏᴜɴᴛ.</blockquote>")
+
+
+# --- 𝙸𝙳, 𝙸𝙽𝙵𝙾, 𝙵𝙸𝙽𝙵𝙾 ---
+@Client.on_message(filters.command("id"))
+async def get_id(client, message):
+    text = f"👤 <b>ʏᴏᴜʀ ɪᴅ:</b> <code>{message.from_user.id}</code>\n"
+    if message.chat.type != enums.ChatType.PRIVATE:
+        text += f"👥 <b>ɢʀᴏᴜᴘ ɪᴅ:</b> <code>{message.chat.id}</code>"
+    await message.reply(text)
+
+@Client.on_message(filters.command("info"))
+async def get_info(client, message):
+    user = message.from_user
+    if len(message.command) > 1:
+        try: user = await client.get_users(message.command[1])
+        except Exception as e: return await message.reply(f"❌ ᴇʀʀᴏʀ: {e}")
+
+    await message.reply(
+        f"📋 <b>ᴜsᴇʀ ɪɴғᴏʀᴍᴀᴛɪᴏɴ</b>\n"
+        f"<blockquote>👤 ɴᴀᴍᴇ: {user.first_name}\n🆔 ɪᴅ: <code>{user.id}</code>\n🔗 @{user.username or 'None'}</blockquote>"
+    )
+
+@Client.on_message(filters.command("finfo"))
+async def get_finfo(client, message):
+    if not message.reply_to_message or not message.reply_to_message.forward_from:
+        return await message.reply("⚠️ ʀᴇᴘʟʏ ᴛᴏ ᴀ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇ.")
+    f = message.reply_to_message.forward_from
+    await message.reply(f"✉️ <b>ғᴏʀᴡᴀʀᴅ sᴏᴜʀᴄᴇ</b>\n<blockquote>👤 ɴᴀᴍᴇ: {f.first_name}\n🆔 ɪᴅ: <code>{f.id}</code></blockquote>")
 
 # --- 𝚂𝙴𝚃 𝙸𝙽𝚃𝙴𝚁𝚅𝙰𝙻 ---
 @Client.on_message(filters.command("set_interval") & filters.private)
@@ -193,15 +233,23 @@ async def help_cmd(client, message):
         "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇssᴀɢᴇ ʟɪɴᴋ ғʀᴏᴍ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ.\n"
         "𝟹. ᴜsᴇ <code>/set_link</code> + ᴛʜᴀᴛ ʟɪɴᴋ.\n"
         "𝟺. ᴜsᴇ <code>/addbot</code> @username URL.</blockquote>\n\n"
-        "📊 <b>ᴄᴏᴍᴍᴀɴᴅs:</b>\n"
-        "• <b>/addbot</b> - ᴀᴅᴅ ʙᴏᴛ ᴛᴏ ʟɪsᴛ\n"
-        "• <b>/removebot</b> - ʀᴇᴍᴏᴠᴇ ᴀ ʙᴏᴛ\n"
-        "• <b>/list</b> - sʜᴏᴡ ᴀʟʟ ʏᴏᴜʀ ʙᴏᴛs\n"
-        "• <b>/set_interval</b> - sᴇᴛ 𝟸/𝟻 ᴍɪɴ ᴄʜᴇᴄᴋs\n"
-        "• <b>/dashboard</b> - ɢᴇᴛ ʏᴏᴜʀ ᴡᴇʙ ʟɪɴᴋ\n"
-        "• <b>/logs</b> - ᴠɪᴇᴡ sʏsᴛᴇᴍ ʟᴏɢs"
+        "📊 <b>ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅs:</b>\n\n"
+        "• /addbot <code>@ᴜsᴇʀ URL</code> — ᴀᴅᴅ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏ ᴍᴏɴɪᴛᴏʀɪɴɢ ʟɪsᴛ\n"
+        "• /removebot <code>\"ɴᴀᴍᴇ\"</code> — ʀᴇᴍᴏᴠᴇ ᴀ sᴘᴇᴄɪғɪᴄ ʙᴏᴛ ʙʏ ɪᴛs ɴᴀᴍᴇ\n"
+        "• /deleteall <code>confirm</code> — ᴘᴜʀɢᴇ ᴀʟʟ ʏᴏᴜʀ ᴀᴅᴅᴇᴅ ʙᴏᴛs ᴀᴛ ᴏɴᴄᴇ\n"
+        "• /list — sʜᴏᴡ ᴀʟʟ ʏᴏᴜʀ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛs ᴀɴᴅ sᴛᴀᴛᴜs\n"
+        "• /set_interval <code>𝟸/𝟻</code> — ᴄʜᴏᴏsᴇ ᴄʜᴇᴄᴋɪɴɢ ᴅᴇʟᴀʏ ɪɴ ᴍɪɴᴜᴛᴇs\n"
+        "• /dashboard — ɢᴇᴛ ʏᴏᴜʀ sᴇᴄᴜʀᴇ ᴡᴇʙ ɪɴᴛᴇʀғᴀᴄᴇ ʟɪɴᴋ\n"
+        "• /id — ɢᴇᴛ ʏᴏᴜʀ ᴜsᴇʀ ɪᴅ ᴀɴᴅ ᴄᴜʀʀᴇɴᴛ ᴄʜᴀᴛ ɪᴅ\n"
+        "• /info <code>@ᴜsᴇʀ</code> — ᴠɪᴇᴡ ᴅᴇᴛᴀɪʟᴇᴅ ɪɴғᴏ ᴀʙᴏᴜᴛ ᴀ ᴜsᴇʀ\n"
+        "• /finfo (ʀᴇᴘʟʏ) — ɢᴇᴛ sᴏᴜʀᴄᴇ ɪᴅ ᴏғ ᴀ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇ\n"
+        "• /logs — ᴠɪᴇᴡ sʏsᴛᴇᴍ ʟᴏɢs (ᴏᴡɴᴇʀ ᴏɴʟʏ)"
     )
-    await message.reply(help_text, parse_mode=enums.ParseMode.HTML, disable_web_page_preview=True)
+    await message.reply(
+        help_text, 
+        parse_mode=enums.ParseMode.HTML, 
+        disable_web_page_preview=True
+    )
 
 # --- 𝙱𝚁𝙾𝙰𝙳𝙲𝙰𝚂𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
 @Client.on_message(filters.command("broadcast") & filters.user(Config.OWNER_ID))
@@ -262,7 +310,7 @@ async def status_handler(client, message):
         parse_mode=enums.ParseMode.HTML
     )
 
-# --- SHOW HELP (BUTTON CALLBACK) ---
+## --- SHOW HELP (BUTTON CALLBACK UPDATED) ---
 @Client.on_callback_query(filters.regex("show_help"))
 async def show_help_cb(client, callback_query):
     help_text = (
@@ -273,40 +321,33 @@ async def show_help_cb(client, callback_query):
         "𝟹. ᴜsᴇ <code>/set_link</code> + ʟɪɴᴋ.\n"
         "𝟺. ᴜsᴇ <code>/addbot</code> @username URL.</blockquote>\n\n"
         "📊 <b>ᴄᴏᴍᴍᴀɴᴅs:</b>\n"
-        "• /addbot - ᴀᴅᴅ ʙᴏᴛ\n"
-        "• /removebot - ʀᴇᴍᴏᴠᴇ ʙᴏᴛ\n"
-        "• /list - ʟɪsᴛ ʙᴏᴛs\n"
-        "• /set_interval - 2/5 ᴍɪɴ\n"
+        "• /addbot - ᴀᴅᴅ ɴᴇᴡ ʙᴏᴛ\n"
+        "• /removebot - ᴅᴇʟᴇᴛᴇ ʙᴏᴛ\n"
+        "• /deleteall - ᴡɪᴘᴇ ᴀʟʟ\n"
+        "• /list - sʜᴏᴡ ʟɪsᴛ\n"
+        "• /set_interval - sᴇᴛ ᴛɪᴍᴇ\n"
         "• /dashboard - ᴡᴇʙ ᴜɪ\n"
-        "• /logs - ᴏᴡɴᴇʀ"
+        "• /id, /info, /finfo - ᴜᴛɪʟs"
     )
 
     await callback_query.message.edit_text(
         help_text,
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("✅ Understand", callback_data="close_help")]
+            [InlineKeyboardButton("✅ ᴜɴᴅᴇʀsᴛᴀɴᴅ", callback_data="close_help")]
         ]),
         parse_mode=enums.ParseMode.HTML,
         disable_web_page_preview=True
     )
-
     await callback_query.answer()
 
 # --- STATS COMMAND (OWNER ONLY) ---
 @Client.on_message(filters.command("stats") & filters.user(Config.OWNER_ID))
 async def stats_cmd(client, message):
     try:
-        # Fast counts (no loops 🚀)
         total_users = await registered_users.count_documents({})
         total_bots = await bots_col.count_documents({})
-
-        # Status breakdown
-        online_bots = await bots_col.count_documents({
-            "status": {"$regex": "Online"}
-        })
+        online_bots = await bots_col.count_documents({"status": {"$regex": "Online"}})
         offline_bots = total_bots - online_bots
-
-        # Unique users who added bots (pro stat 🔥)
         unique_bot_users = len(await bots_col.distinct("user_id"))
 
         text = (
@@ -324,62 +365,21 @@ async def stats_cmd(client, message):
             text,
             parse_mode=enums.ParseMode.HTML
         )
-
     except Exception as e:
         await message.reply(f"❌ Error: <code>{e}</code>")
 
 # --- 𝚁𝙴𝚂𝚃𝙰𝚁𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 (𝙾𝚆𝙽𝙴𝚁 𝙾𝙽𝙻𝚈) ---
 @Client.on_message(filters.command("restart") & filters.user(Config.OWNER_ID))
 async def restart_bot(client, message):
-    msg = await message.reply("🔄 <b>ᴘʀᴏᴄᴇssɪɴɢ ʀᴇʙᴏᴏᴛ...</b>\n<blockquote>sʜᴜᴛᴛɪɴɢ ᴅᴏᴡɴ ᴀʟʟ ᴀᴄᴛɪᴠᴇ ᴍᴏɴɪᴛᴏʀ sᴇssɪᴏɴs...</blockquote>")
-    
+    msg = await message.reply("🔄 <b>ᴘʀᴏᴄᴇssɪɴɢ ʀᴇʙᴏᴏᴛ...</b>")
     try:
-        # Import active_tasks to clear them gracefully if possible
         from bot import active_tasks
-        for task in active_tasks.values():
-            task.cancel()
-        logger.info("All monitoring tasks cancelled for manual restart.")
-    except Exception:
-        pass
+        for task in active_tasks.values(): task.cancel()
+    except Exception: pass
 
-    await msg.edit("🚀 <b>ʙᴏᴛ ɪs ʀᴇsᴛᴀʀᴛɪɴɢ!</b>\n<blockquote>ɪ'ʟʟ ʙᴇ ʙᴀᴄᴋ ᴏɴʟɪɴᴇ ɪɴ ᴀ ғᴇᴡ sᴇᴄᴏɴᴅs.</blockquote>")
-    
-    # Graceful exit of the Pyrogram client
+    await msg.edit("🚀 <b>ʙᴏᴛ ɪs ʀᴇsᴛᴀʀᴛɪɴɢ!</b>")
     await client.stop()
-    
-    # Hard restart: replaces the current process with a new one
     os.execl(sys.executable, sys.executable, *sys.argv)
-
-
-# --- SHOW HELP (BUTTON CALLBACK) ---
-@Client.on_callback_query(filters.regex("show_help"))
-async def show_help_cb(client, callback_query):
-    help_text = (
-        "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜsᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
-        "🚀 <b>ǫᴜɪᴄᴋ sᴇᴛᴜᴘ:</b>\n"
-        "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀs ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
-        "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇssᴀɢᴇ ʟɪɴᴋ.\n"
-        "𝟹. ᴜsᴇ <code>/set_link</code> + ʟɪɴᴋ.\n"
-        "𝟺. ᴜsᴇ <code>/addbot</code> @username URL.</blockquote>\n\n"
-        "📊 <b>ᴄᴏᴍᴍᴀɴᴅs:</b>\n"
-        "• /addbot - ᴀᴅᴅ ʙᴏᴛ\n"
-        "• /removebot - ʀᴇᴍᴏᴠᴇ ʙᴏᴛ\n"
-        "• /list - ʟɪsᴛ ʙᴏᴛs\n"
-        "• /set_interval - 2/5 ᴍɪɴ\n"
-        "• /dashboard - ᴡᴇʙ ᴜɪ\n"
-        "• /logs - ᴏᴡɴᴇʀ"
-    )
-
-    await callback_query.message.edit_text(
-        help_text,
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("✅ Understand", callback_data="close_help")]
-        ]),
-        parse_mode=enums.ParseMode.HTML,
-        disable_web_page_preview=True
-    )
-
-    await callback_query.answer()
 
 # --- CLOSE HELP ---
 @Client.on_callback_query(filters.regex("close_help"))
