@@ -1,6 +1,6 @@
 import re, asyncio, logging, os, sys
 from pyrogram import Client, filters, enums
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery
 from database import (
     add_bot, remove_bot, get_user_bots, update_user_settings, 
     get_user_config, add_user, get_all_users, delete_all_user_bots,
@@ -23,8 +23,10 @@ async def refresh_monitor(user_id):
     except Exception as e: logger.error(f"ʀᴇꜰʀᴇꜱʜ ᴇʀʀᴏʀ: {e}")
 
 # --- ꜱᴇᴛᴛɪɴɢꜱ ᴍᴇɴᴜ ---
+# This handler now listens for both commands and callback triggers
 @Client.on_message(filters.command("settings") & filters.private)
 async def settings_cmd(client, message):
+    # Use message.from_user whether it's a Message or CallbackQuery
     user_id = message.from_user.id
     cfg = await get_user_config(user_id)
     p = (cfg.get('ping_interval', Config.DEFAULT_PING) if cfg else Config.DEFAULT_PING) // 60
@@ -42,7 +44,8 @@ async def settings_cmd(client, message):
         [InlineKeyboardButton("♻️ ʀᴇꜱᴇᴛ ᴛᴏ ᴅᴇꜰᴀᴜʟᴛ", callback_data="confirm_reset")]
     ])
     
-    if isinstance(message, Client.on_callback_query):
+    # FIXED: Check against the CallbackQuery class
+    if isinstance(message, CallbackQuery):
         await message.edit_message_text(text, reply_markup=buttons)
     else:
         await message.reply(text, reply_markup=buttons)
