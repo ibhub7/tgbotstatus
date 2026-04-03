@@ -31,7 +31,7 @@ async def refresh_monitor(user_id):
 def get_dash_url(user_id):
     """Generates a secure WebApp URL with the access key"""
     base_url = "https://infinity-monitor-bot-ug.koyeb.app"
-    return f"{base_url}/dashboard/{user_id}?key={Config.WEB_ACCESS_KEY}"
+    return f"{base_url}/dashboard/{user_id}?key={Config.ACCESS_KEY}"
 
 # --- 𝚂𝚃𝙰𝚁𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
 @Client.on_message(filters.command("start") & filters.private)
