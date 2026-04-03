@@ -47,6 +47,7 @@ async def dashboard(request: Request, user_id: int):
         context={
             "bots": bot_list, 
             "user_id": user_id,
+            "date": now.strftime("%d/%m/%Y"),
             "time": now.strftime("%H:%M:%S")
         }
     )
@@ -72,6 +73,7 @@ async def verify_stats(request: Request, key: str = Form(...)):
         )
 
     total = await bots_col.count_documents({})
+    # ᴍᴀᴛᴄʜᴇꜱ ᴛʜᴇ ꜱᴍᴀʟʟ ᴄᴀᴘꜱ ꜱᴛᴀᴛᴜꜱ ɪɴ ᴅᴀᴛᴀʙᴀꜱᴇ
     online = await bots_col.count_documents({"status": "✅ ᴏɴʟɪɴᴇ"})
     
     return templates.TemplateResponse(
@@ -87,11 +89,8 @@ async def verify_stats(request: Request, key: str = Form(...)):
 # --- ꜱᴇʀᴠᴇ ꜰᴀᴠɪᴄᴏɴ ꜰʀᴏᴍ ᴛᴇᴍᴘʟᴀᴛᴇꜱ ---
 @router.get('/favicon.ico', include_in_schema=False)
 async def favicon():
-    # ᴜꜱɪɴɢ ʙᴀꜱᴇ_ᴅɪʀ ᴛᴏ ᴇɴꜱᴜʀᴇ ɪᴛ ᴡᴏʀᴋꜱ ᴏɴ ᴀʟʟ ᴘʟᴀᴛꜰᴏʀᴍꜱ
     favicon_path = os.path.join(base_dir, "templates", "favicon.ico")
-    
     if os.path.exists(favicon_path):
         return FileResponse(favicon_path)
     else:
-        # ɴᴏ ᴄᴏɴᴛᴇɴᴛ ꜱᴛᴀᴛᴜꜱ ᴛᴏ ꜱɪʟᴇɴᴄᴇ ᴛʜᴇ 404 ʟᴏɢꜱ
         return Response(status_code=204)
