@@ -5,30 +5,36 @@ from config import Config
 client = motor.motor_asyncio.AsyncIOMotorClient(Config.MONGO_URI)
 db = client.status_db
 
-# Collections 
+# --- ᴄᴏʟʟᴇᴄᴛɪᴏɴꜱ ---
 bots_col = db.mpbots
 users_settings = db.users_settings
 registered_users = db.registered_users 
 
+# --- ʙʀᴏᴀᴅᴄᴀꜱᴛ ᴅᴀᴛᴀ ᴇxᴛᴇɴꜱɪᴏɴ ---
+worker_bots = db["worker_bots"]        # Stores: {username, token, name}
+broadcast_users = db["broadcast_users"] # Stores: {user_id, source_bot}
+
 # --- 𝙳𝙰𝚃𝙰𝙱𝙰𝚂𝙴 𝙸𝙽𝙸𝚃𝙸𝙰𝙻𝙸𝚉𝙰𝚃𝙸𝙾𝙽 ---
 async def init_db():
     """Run this on startup for faster queries and data integrity"""
+    # Monitoring System Indexes
     await bots_col.create_index([("user_id", 1), ("name", 1)], unique=True)
     await registered_users.create_index("user_id", unique=True)
 
-    # Broadcast System Indexes (New)
+    # Broadcast System Indexes
+    # Ensures no duplicate bot usernames and lightning-fast ID lookups during broadcast
     await worker_bots.create_index("username", unique=True)
     await broadcast_users.create_index("user_id", unique=True)
-    await broadcast_users.create_index("source") # Essential for the count logic we added
+    await broadcast_users.create_index("source") 
 
-# --- 𝙱𝙾𝚃𝚂 𝙼𝙰𝙽𝙰𝙶𝙴𝙼𝙴𝙽𝚃 ---
+# --- 𝙱𝙾𝚃𝚂 𝙼𝙰𝙽𝙰𝙶𝙴𝙼𝙴𝙽𝚃 (𝚄𝙿𝚃𝙸𝙼𝙴) ---
 async def add_bot(user_id, name, url, username):
     """Add or update a monitored bot"""
     return await bots_col.update_one(
         {"user_id": user_id, "name": name}, 
         {"$set": {
             "user_id": user_id, "name": name, "url": url, 
-            "username": username, "status": "✅ Online"
+            "username": username, "status": "✅ ᴏɴʟɪɴᴇ" # Fixed to Small Caps
         }}, upsert=True
     )
 
@@ -44,7 +50,7 @@ async def delete_all_user_bots(user_id):
     """Resets user account by deleting all their bots"""
     return await bots_col.delete_many({"user_id": user_id})
 
-# --- 𝚄𝚂𝙴𝚁 𝚂𝙴𝚃𝚃𝙸𝙽𝙶𝚂 ---
+# --- 𝚄𝚂𝙴𝚁 𝚂𝙴𝚃𝚃𝙸𝙽𝙶𝚂 (𝙳𝙰𝚂𝙷𝙱𝙾𝙰𝚁𝙳) ---
 async def get_user_config(user_id):
     return await users_settings.find_one({"user_id": user_id})
 
@@ -59,18 +65,15 @@ async def update_user_settings(user_id, ping_interval=None, msg_interval=None, p
     await users_settings.update_one({"user_id": user_id}, {"$set": data}, upsert=True)
 
 async def reset_user_intervals(user_id):
-    """𝚁𝙴𝙼𝙾𝚅𝙴𝚂 𝙲𝚄𝚂𝚃𝙾𝙼 𝚃𝙸𝙼𝙸𝙽𝙶𝚂 𝚂𝙾 𝚂𝚈𝚂𝚃𝙴𝙼 𝚄𝚂𝙴𝚂 𝙲𝙾𝙽𝙵𝙸𝙶 𝙳𝙴𝙵𝙰𝚄𝙻𝚃𝚂"""
+    """𝚁𝙴𝙼𝙾ᴠ𝙴𝚂 𝙲𝚄𝚂𝚃𝙾𝙼 𝚃𝙸𝙼𝙸𝙽𝙶𝚂 𝚂𝙾 𝚂𝚈𝚂𝚃𝙴𝙼 𝚄𝚂𝙴𝚂 𝙲𝙾𝙽𝙵𝙸𝙶 𝙳𝙴𝙵𝙰𝚄𝙻𝚃𝚂"""
     return await users_settings.update_one(
         {"user_id": user_id}, 
         {"$unset": {"ping_interval": "", "msg_interval": ""}}
     )
 
+# --- 𝚄𝚂𝙴𝚁 𝙼𝙰𝙽𝙰𝙶𝙴𝙼𝙴𝙽𝚃 ---
 async def add_user(user_id):
     await registered_users.update_one({"user_id": user_id}, {"$set": {"user_id": user_id}}, upsert=True)
 
 async def get_all_users():
     return registered_users.find({})
-
-# --- ʙʀᴏᴀᴅᴄᴀꜱᴛ ᴅᴀᴛᴀ ᴇxᴛᴇɴꜱɪᴏɴ ---
-worker_bots = db["worker_bots"]        # Stores: {username, token, name}
-broadcast_users = db["broadcast_users"] # Stores: {user_id, source_bot}
