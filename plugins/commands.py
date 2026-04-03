@@ -451,13 +451,22 @@ async def stats_cmd(client, message):
 @Client.on_message(filters.command("restart") & filters.user(Config.OWNER_ID))
 async def restart_bot(client, message):
     msg = await message.reply("🔄 <b>ᴘʀᴏᴄᴇssɪɴɢ ʀᴇʙᴏᴏᴛ...</b>")
+    
+    # 1. Try to cancel active monitoring tasks so they don't hang
     try:
         from bot import active_tasks
-        for task in active_tasks.values(): task.cancel()
-    except Exception: pass
+        for task in active_tasks.values():
+            task.cancel()
+    except Exception:
+        pass
 
-    await msg.edit("🚀 <b>ʙᴏᴛ ɪs ʀᴇsᴛᴀʀᴛɪɴɢ!</b>")
-    await client.stop()
+    await msg.edit("🚀 <b>ʙᴏᴛ ɪs ʀᴇsᴛᴀʀᴛɪɴɢ!</b>\n<i>The process will resume in a few seconds...</i>")
+    
+    # 2. Give the message a tiny bit of time to send before killing the process
+    await asyncio.sleep(2)
+    
+    # 3. Use execl to replace the current process with a new one.
+    # We DON'T call client.stop() here to avoid the RuntimeError.
     os.execl(sys.executable, sys.executable, *sys.argv)
 
 # --- 𝚂𝙴𝙽𝙳 / 𝚁𝙴𝙿𝙻𝚈 𝚃𝙾 𝚄𝚂𝙴𝚁 (𝙾𝚆𝙽𝙴𝚁 𝙾𝙽𝙻𝚈) ---
