@@ -306,24 +306,26 @@ async def report_error_callback(client, callback_query):
 @Client.on_message(filters.command("help") & filters.private)
 async def help_cmd(client, message):
     help_text = (
-        "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜsᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
-        "🚀 <b>ǫᴜɪᴄᴋ sᴇᴛᴜᴘ:</b>\n"
-        "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀs ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
-        "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇssᴀɢᴇ ʟɪɴᴋ ғʀᴏᴍ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ.\n"
-        "𝟹. ᴜsᴇ <code>/set_link</code> + ᴛʜᴀᴛ ʟɪɴᴋ.\n"
-        "𝟺. ᴜsᴇ <code>/addbot</code> @username URL.</blockquote>\n\n"
-        "📊 <b>ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅs:</b>\n\n"
-        "• /addbot <code>@ᴜsᴇʀɴᴀᴍᴇ URL</code> — ᴀᴅᴅ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏ ᴍᴏɴɪᴛᴏʀɪɴɢ ʟɪsᴛ\n"
-        "• /removebot <code>\"@ᴜsᴇʀɴᴀᴍᴇ\"</code> — ʀᴇᴍᴏᴠᴇ ᴀ sᴘᴇᴄɪғɪᴄ ʙᴏᴛ ʙʏ ɪᴛs ɴᴀᴍᴇ\n"
-        "• /deleteall <code>confirm</code> — ᴘᴜʀɢᴇ ᴀʟʟ ʏᴏᴜʀ ᴀᴅᴅᴇᴅ ʙᴏᴛs ᴀᴛ ᴏɴᴄᴇ\n"
-        "• /list — sʜᴏᴡ ᴀʟʟ ʏᴏᴜʀ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛs ᴀɴᴅ sᴛᴀᴛᴜs\n"
-        "• /set_interval <code>𝟸/𝟻</code> — ᴄʜᴏᴏsᴇ ᴄʜᴇᴄᴋɪɴɢ ᴅᴇʟᴀʏ ɪɴ ᴍɪɴᴜᴛᴇs\n"
-        "• /dashboard — ɢᴇᴛ ʏᴏᴜʀ sᴇᴄᴜʀᴇ ᴡᴇʙ ɪɴᴛᴇʀғᴀᴄᴇ ʟɪɴᴋ\n"
-        "• /id — ɢᴇᴛ ʏᴏᴜʀ ᴜsᴇʀ ɪᴅ ᴀɴᴅ ᴄᴜʀʀᴇɴᴛ ᴄʜᴀᴛ ɪᴅ\n"
-        "• /info <code>@ᴜsᴇʀ</code> — ᴠɪᴇᴡ ᴅᴇᴛᴀɪʟᴇᴅ ɪɴғᴏ ᴀʙᴏᴜᴛ ᴀ ᴜsᴇʀ\n"
-        "• /finfo (ʀᴇᴘʟʏ) — ɢᴇᴛ sᴏᴜʀᴄᴇ ɪᴅ ᴏғ ᴀ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍᴇssᴀɢᴇ\n"
-        "• /logs — ᴠɪᴇᴡ sʏsᴛᴇᴍ ʟᴏɢs (ᴏᴡɴᴇʀ ᴏɴʟʏ)"
-    )
+    "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜꜱᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
+    "🚀 <b>ǫᴜɪᴄᴋ ꜱᴇᴛᴜᴘ:</b>\n"
+    "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀꜱ ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
+    "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇꜱꜱᴀɢᴇ ʟɪɴᴋ ꜰʀᴏᴍ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ.\n"
+    "𝟹. ᴜꜱᴇ <code>/set_link</code> + ᴛʜᴀᴛ ʟɪɴᴋ.\n"
+    "𝟺. ᴜꜱᴇ <code>/addbot</code> @ᴜꜱᴇʀɴᴀᴍᴇ ᴜʀʟ.</blockquote>\n\n"
+    "📊 <b>ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅꜱ:</b>\n\n"
+    "• /addbot <code>@ᴜꜱᴇʀɴᴀᴍᴇ ᴜʀʟ</code> — ᴀᴅᴅ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏ ʟɪꜱᴛ\n"
+    "• /removebot <code>@ᴜꜱᴇʀɴᴀᴍᴇ</code> — ʀᴇᴍᴏᴠᴇ ᴀ ꜱᴘᴇᴄɪꜰɪᴄ ʙᴏᴛ\n"
+    "• /deleteall <code>confirm</code> — ᴘᴜʀɢᴇ ᴀʟʟ ʏᴏᴜʀ ᴀᴅᴅᴇᴅ ʙᴏᴛꜱ\n"
+    "• /list — ꜱʜᴏᴡ ᴀʟʟ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛꜱ ᴀɴᴅ ꜱᴛᴀᴛᴜꜱ\n"
+    "• /settings — ᴄᴏɴꜰɪɢᴜʀᴇ ᴘɪɴɢ & ᴜᴘᴅᴀᴛᴇ ɪɴᴛᴇʀᴠᴀʟꜱ\n"
+    "• /reset_settings — ʀᴇᴠᴇʀᴛ ᴛᴏ ꜱʏꜱᴛᴇᴍ ᴅᴇꜰᴀᴜʟᴛꜱ\n"
+    "• /dashboard — ɢᴇᴛ ʏᴏᴜʀ ꜱᴇᴄᴜʀᴇ ᴡᴇʙ ɪɴᴛᴇʀꜰᴀᴄᴇ ʟɪɴᴋ\n"
+    "• /id — ɢᴇᴛ ʏᴏᴜʀ ᴜꜱᴇʀ ɪᴅ ᴀɴᴅ ᴄᴜʀʀᴇɴᴛ ᴄʜᴀᴛ ɪᴅ\n"
+    "• /info <code>@ᴜꜱᴇʀ</code> — ᴠɪᴇᴡ ᴅᴇᴛᴀɪʟᴇᴅ ɪɴꜰᴏ ᴀʙᴏᴜᴛ ᴀ ᴜꜱᴇʀ\n"
+    "• /finfo (ʀᴇᴘʟʏ) — ɢᴇᴛ ꜱᴏᴜʀᴄᴇ ɪᴅ ᴏꜰ ꜰᴏʀᴡᴀʀᴅᴇᴅ ᴍꜱɢ\n"
+    "• /logs — ᴠɪᴇᴡ ꜱʏꜱᴛᴇᴍ ʟᴏɢꜱ (ᴏᴡɴᴇʀ ᴏɴʟʏ)\n"
+    "• /restart — ᴘᴇʀꜰᴏʀᴍ ᴀ ꜱᴀꜰᴇ ꜱʏꜱᴛᴇᴍ ʀᴇʙᴏᴏᴛ (ᴏᴡɴᴇʀ ᴏɴʟʏ)"
+)
     await message.reply(
         help_text, 
         parse_mode=enums.ParseMode.HTML, 
@@ -393,21 +395,26 @@ async def status_handler(client, message):
 @Client.on_callback_query(filters.regex("show_help"))
 async def show_help_cb(client, callback_query):
     help_text = (
-        "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜsᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
-        "🚀 <b>ǫᴜɪᴄᴋ sᴇᴛᴜᴘ:</b>\n"
-        "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀs ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
-        "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇssᴀɢᴇ ʟɪɴᴋ.\n"
-        "𝟹. ᴜsᴇ <code>/set_link</code> + ʟɪɴᴋ.\n"
-        "𝟺. ᴜsᴇ <code>/addbot</code> @username URL.</blockquote>\n\n"
-        "📊 <b>ᴄᴏᴍᴍᴀɴᴅs:</b>\n"
-        "• /addbot - ᴀᴅᴅ ɴᴇᴡ ʙᴏᴛ\n"
-        "• /removebot - ᴅᴇʟᴇᴛᴇ ʙᴏᴛ\n"
-        "• /deleteall - ᴡɪᴘᴇ ᴀʟʟ\n"
-        "• /list - sʜᴏᴡ ʟɪsᴛ\n"
-        "• /set_interval - sᴇᴛ ᴛɪᴍᴇ\n"
-        "• /dashboard - ᴡᴇʙ ᴜɪ\n"
-        "• /id, /info, /finfo - ᴜᴛɪʟs"
-    )
+    "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜꜱᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
+    "🚀 <b>ǫᴜɪᴄᴋ ꜱᴇᴛᴜᴘ:</b>\n"
+    "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀꜱ ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
+    "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇꜱꜱᴀɢᴇ ʟɪɴᴋ ꜰʀᴏᴍ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ.\n"
+    "𝟹. ᴜꜱᴇ <code>/set_link</code> + ᴛʜᴀᴛ ʟɪɴᴋ.\n"
+    "𝟺. ᴜꜱᴇ <code>/addbot</code> @ᴜꜱᴇʀɴᴀᴍᴇ ᴜʀʟ.</blockquote>\n\n"
+    "📊 <b>ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅꜱ:</b>\n\n"
+    "• /addbot <code>@ᴜꜱᴇʀɴᴀᴍᴇ ᴜʀʟ</code> — ᴀᴅᴅ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏ ʟɪꜱᴛ\n"
+    "• /removebot <code>@ᴜꜱᴇʀɴᴀᴍᴇ</code> — ʀᴇᴍᴏᴠᴇ ᴀ ꜱᴘᴇᴄɪꜰɪᴄ ʙᴏᴛ\n"
+    "• /deleteall <code>confirm</code> — ᴘᴜʀɢᴇ ᴀʟʟ ʏᴏᴜʀ ᴀᴅᴅᴇᴅ ʙᴏᴛꜱ\n"
+    "• /list — ꜱʜᴏᴡ ᴀʟʟ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛꜱ ᴀɴᴅ ꜱᴛᴀᴛᴜꜱ\n"
+    "• /settings — ᴄᴏɴꜰɪɢᴜʀᴇ ᴘɪɴɢ & ᴜᴘᴅᴀᴛᴇ ɪɴᴛᴇʀᴠᴀʟꜱ\n"
+    "• /reset_settings — ʀᴇᴠᴇʀᴛ ᴛᴏ ꜱʏꜱᴛᴇᴍ ᴅᴇꜰᴀᴜʟᴛꜱ\n"
+    "• /dashboard — ɢᴇᴛ ʏᴏᴜʀ ꜱᴇᴄᴜʀᴇ ᴡᴇʙ ɪɴᴛᴇʀꜰᴀᴄᴇ ʟɪɴᴋ\n"
+    "• /id — ɢᴇᴛ ʏᴏᴜʀ ᴜꜱᴇʀ ɪᴅ ᴀɴᴅ ᴄᴜʀʀᴇɴᴛ ᴄʜᴀᴛ ɪᴅ\n"
+    "• /info <code>@ᴜꜱᴇʀ</code> — ᴠɪᴇᴡ ᴅᴇᴛᴀɪʟᴇᴅ ɪɴꜰᴏ ᴀʙᴏᴜᴛ ᴀ ᴜꜱᴇʀ\n"
+    "• /finfo (ʀᴇᴘʟʏ) — ɢᴇᴛ ꜱᴏᴜʀᴄᴇ ɪᴅ ᴏꜰ ꜰᴏʀᴡᴀʀᴅᴇᴅ ᴍꜱɢ\n"
+    "• /logs — ᴠɪᴇᴡ ꜱʏꜱᴛᴇᴍ ʟᴏɢꜱ (ᴏᴡɴᴇʀ ᴏɴʟʏ)\n"
+    "• /restart — ᴘᴇʀꜰᴏʀᴍ ᴀ ꜱᴀꜰᴇ ꜱʏꜱᴛᴇᴍ ʀᴇʙᴏᴏᴛ (ᴏᴡɴᴇʀ ᴏɴʟʏ)"
+)
 
     await callback_query.message.edit_text(
         help_text,
