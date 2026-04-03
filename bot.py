@@ -97,7 +97,8 @@ async def monitor_user_task(user_id, ping_interval, msg_interval, post_link):
                     )
 
                 status_text += "━━━━━━━━━━━━━━━━━━━━━━━\n"
-                status_text += f"🛰 ᴘɪɴɢ: {ping_interval//60}ᴍ | 🔄 ᴜᴘᴅᴀᴛᴇ: {msg_interval//60}ᴍ"
+                #status_text += f"🛰 ᴘɪɴɢ: {ping_interval//60}ᴍ | 🔄 ᴜᴘᴅᴀᴛᴇ: {msg_interval//60}ᴍ"
+                status_text += f"🔄 ᴀᴜᴛᴏ ʀᴇꜰʀᴇꜱʜ: {msg_interval//60}ᴍ ɪɴᴛᴇʀᴠᴀʟ"
 
                 cid, mid = parse_tg_link(post_link)
                 if cid and mid:
