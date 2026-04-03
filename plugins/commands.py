@@ -239,7 +239,8 @@ async def set_interval(client, message):
         f"<blockquote>ʏᴏᴜʀ ʙᴏᴛs ᴡɪʟʟ ʙᴇ ᴄʜᴇᴄᴋᴇᴅ ᴇᴠᴇʀʏ <b>{args[1]} ᴍɪɴᴜᴛᴇs</b>.</blockquote>"
     )
 
-# --- 𝚂𝙴𝚃 𝙻𝙸𝙽𝙺 ---
+
+# --- 𝚂𝙴𝚃 𝙻𝙸𝙽𝙺 (𝚆𝙸𝚃𝙷 𝙰𝙳𝙼𝙸𝙽 𝚁𝙴𝙿𝙾𝚁𝚃𝙸𝙽𝙶) ---
 @Client.on_message(filters.command("set_link") & filters.private)
 async def on_set_link(client, message):
     user_id = message.from_user.id
@@ -247,9 +248,59 @@ async def on_set_link(client, message):
         return await message.reply("❌ ᴜsᴀɢᴇ: <code>/set_link POST_URL</code>")
     
     link = message.text.split(None, 1)[1]
-    await update_user_settings(user_id, post_link=link)
-    await refresh_monitor(user_id)
-    await message.reply("✅ <b>sᴛᴀᴛᴜs ʟɪɴᴋ ᴜᴘᴅᴀᴛᴇᴅ!</b>\n<blockquote>ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ ᴘᴏsᴛ ᴡɪʟʟ ɴᴏᴡ ʙᴇ ᴜᴘᴅᴀᴛᴇᴅ ʟɪᴠᴇ.</blockquote>")
+    progress = await message.reply("🔍 <b>ᴠᴇʀɪғʏɪɴɢ ᴘᴇʀᴍɪsssɪᴏɴs...</b>")
+
+    from bot import parse_tg_link
+    cid, mid = parse_tg_link(link)
+
+    if not cid or not mid:
+        return await progress.edit("❌ <b>ɪɴᴠᴀʟɪᴅ ʟɪɴᴋ ғᴏʀᴍᴀᴛ!</b>")
+
+    try:
+        # Test Edit
+        test_text = "⚙️ <b>ᴄᴏɴғɪɢᴜʀɪɴɢ ᴍᴏɴɪᴛᴏʀ...</b>"
+        await client.edit_message_text(cid, mid, test_text)
+        
+        # Success Logic
+        await update_user_settings(user_id, post_link=link)
+        await refresh_monitor(user_id)
+        await progress.edit("✅ <b>sᴛᴀᴛᴜs ʟɪɴᴋ ᴠᴇʀɪғɪᴇᴅ & ᴜᴘᴅᴀᴛᴇᴅ!</b>\n<blockquote>ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ ᴘᴏsᴛ ᴡɪʟʟ ɴᴏᴡ ʙᴇ ᴜᴘᴅᴀᴛᴇᴅ ʟɪᴠᴇ.</blockquote>")</b>")
+
+    except Exception as e:
+        error_log = str(e)
+        
+        # Notify the User and offer a Report Button
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("📢 ʀᴇᴘᴏʀᴛ ᴛᴏ ᴀᴅᴍɪɴ", callback_data=f"report_error|{user_id}")]
+        ])
+        
+        await progress.edit(
+            f"❌ <b>ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ ғᴀɪʟᴇᴅ!</b>\n\n"
+            f"<blockquote><b>ʟᴏɢ:</b> <code>{error_log}</code></blockquote>\n\n"
+            f"ɪғ ʏᴏᴜ ʜᴀᴠᴇ ᴀʟʀᴇᴀᴅʏ ɢɪᴠᴇɴ ᴀᴅᴍɪɴ ᴘᴇʀᴍɪssɪᴏɴs ᴀɴᴅ ᴛʜɪs ᴘᴇʀsɪsᴛs, ᴄʟɪᴄᴋ ʙᴇʟᴏᴡ.",
+            reply_markup=keyboard
+        )
+
+# --- 𝙲𝙰𝙻𝙻𝙱𝙰𝙲Ｋ 𝙷𝙰𝙽𝙳𝙻𝙴𝚁 𝙵𝙾𝚁 𝚁𝙴𝙿𝙾𝚁𝚃𝙸𝙽𝙶 ---
+@Client.on_callback_query(filters.regex(r"report_error\|(\d+)"))
+async def report_error_callback(client, callback_query):
+    reporter_id = int(callback_query.data.split("|")[1])
+    
+    # Send detailed report to Admin
+    report_text = (
+        "⚠️ <b>ɴᴇᴡ ᴘᴇʀᴍɪssɪᴏɴ ɪssᴜᴇ ʀᴇᴘᴏʀᴛᴇᴅ!</b>\n\n"
+        f"👤 <b>ᴜsᴇʀ:</b> <a href='tg://user?id={reporter_id}'>{callback_query.from_user.first_name}</a>\n"
+        f"🆔 <b>ɪᴅ:</b> <code>{reporter_id}</code>\n"
+        f"🛠 <b>ʙᴏᴛ:</b> @talk_mrs_bot\n"
+        f"🕒 <b>ᴛɪᴍᴇ:</b> <code>{datetime.now().strftime('%H:%M:%S')}</code>"
+    )
+    
+    try:
+        await client.send_message(Config.OWNER_ID, report_text)
+        await callback_query.answer("✅ Report sent to Admin!", show_alert=True)
+        await callback_query.message.edit_reply_markup(None) # Remove button after use
+    except Exception as e:
+        await callback_query.answer(f"❌ Failed to send report: {e}", show_alert=True)
 
 # --- 𝙷𝙴𝙻𝙿 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 ---
 @Client.on_message(filters.command("help") & filters.private)
@@ -408,6 +459,59 @@ async def restart_bot(client, message):
     await msg.edit("🚀 <b>ʙᴏᴛ ɪs ʀᴇsᴛᴀʀᴛɪɴɢ!</b>")
     await client.stop()
     os.execl(sys.executable, sys.executable, *sys.argv)
+
+# --- 𝚂𝙴𝙽𝙳 / 𝚁𝙴𝙿𝙻𝚈 𝚃𝙾 𝚄𝚂𝙴𝚁 (𝙾𝚆𝙽𝙴𝚁 𝙾𝙽𝙻𝚈) ---
+@Client.on_message(filters.command("send") & filters.user(Config.OWNER_ID))
+async def send_msg_cmd(client, message):
+    if len(message.command) < 3:
+        return await message.reply("❌ ᴜsᴀɢᴇ: <code>/send [USER_ID] [MESSAGE]</code>\n"
+                                   "ᴇxᴀᴍᴘʟᴇ: <code>/send 12345678 Check now, it's fixed!</code>")
+
+    target_user_id = message.command[1]
+    # Join everything after the ID as the message text
+    text_to_send = " ".join(message.command[2:])
+
+    try:
+        # Send the message to the user
+        await client.send_message(
+            chat_id=int(target_user_id),
+            text=f"✉️ <b>ᴍᴇssᴀɢᴇ ғʀᴏᴍ ᴀᴅᴍɪɴ:</b>\n\n<blockquote>{text_to_send}</blockquote>",
+            parse_mode=enums.ParseMode.HTML
+        )
+        await message.reply(f"✅ <b>ᴍᴇssᴀɢᴇ sᴇɴᴛ ᴛᴏ:</b> <code>{target_user_id}</code>")
+        
+    except Exception as e:
+        await message.reply(f"❌ <b>ғᴀɪʟᴇᴅ ᴛᴏ sᴇɴᴅ:</b>\n<code>{e}</code>")
+
+# --- 𝚁𝙴𝙿𝙻𝚈 𝙱𝚈 𝚁𝙴𝙿𝙻𝚈𝙸𝙽𝙶 (𝙰𝚄𝚃𝙾-𝚁𝙴𝙿𝙻𝚈 𝚂𝚈𝚂𝚃𝙴𝙼) ---
+@Client.on_message(filters.user(Config.OWNER_ID) & filters.reply & filters.private)
+async def auto_reply_to_report(client, message):
+    reply_to = message.reply_to_message
+    
+    # Check if the message you are replying to is a Report or Info message containing an ID
+    if reply_to.text and "🆔 ɪᴅ:" in reply_to.text:
+        try:
+            # 1. Extract the User ID from the text using a simple split
+            # We look for the number right after "🆔 ɪᴅ: "
+            parts = reply_to.text.split("🆔 ɪᴅ: ")
+            user_id = parts[1].split("\n")[0].strip()
+            
+            # 2. Send your message to that User ID
+            await client.send_message(
+                chat_id=int(user_id),
+                text=(
+                    "✉️ <b>ᴀᴅᴍɪɴ ʀᴇᴘʟɪᴇᴅ ᴛᴏ ʏᴏᴜʀ ʀᴇᴘᴏʀᴛ:</b>\n"
+                    f"<blockquote>{message.text}</blockquote>"
+                ),
+                parse_mode=enums.ParseMode.HTML
+            )
+            
+            # 3. Confirm to you that it was sent
+            await message.reply(f"✅ <b>ᴍᴇssᴀɢᴇ sᴇɴᴛ ᴛᴏ:</b> <code>{user_id}</code>")
+            
+        except Exception as e:
+            logger.error(f"Reply Error: {e}")
+            await message.reply(f"❌ <b>ᴄᴏᴜʟᴅ ɴᴏᴛ ᴘᴀʀsᴇ ɪᴅ:</b> <code>{e}</code>")
 
 # --- CLOSE HELP ---
 @Client.on_callback_query(filters.regex("close_help"))
