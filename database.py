@@ -16,6 +16,11 @@ async def init_db():
     await bots_col.create_index([("user_id", 1), ("name", 1)], unique=True)
     await registered_users.create_index("user_id", unique=True)
 
+    # Broadcast System Indexes (New)
+    await worker_bots.create_index("username", unique=True)
+    await broadcast_users.create_index("user_id", unique=True)
+    await broadcast_users.create_index("source") # Essential for the count logic we added
+
 # --- 𝙱𝙾𝚃𝚂 𝙼𝙰𝙽𝙰𝙶𝙴𝙼𝙴𝙽𝚃 ---
 async def add_bot(user_id, name, url, username):
     """Add or update a monitored bot"""
@@ -65,3 +70,7 @@ async def add_user(user_id):
 
 async def get_all_users():
     return registered_users.find({})
+
+# --- ʙʀᴏᴀᴅᴄᴀꜱᴛ ᴅᴀᴛᴀ ᴇxᴛᴇɴꜱɪᴏɴ ---
+worker_bots = db["worker_bots"]        # Stores: {username, token, name}
+broadcast_users = db["broadcast_users"] # Stores: {user_id, source_bot}
