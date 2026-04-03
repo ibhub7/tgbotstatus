@@ -35,7 +35,7 @@ async def monitor_user_task(user_id, interval, post_link):
     headers = {'User-Agent': 'MonitorBot/3.0'}
     while True:
         try:
-            now_ist = datetime.now(IST).strftime('%H:%M:%S')
+            now_ist = datetime.now(IST).strftime('%d/%m/%Y\n%H:%M:%S')
             status_text = (
                 "🌐 <b>ʟɪᴠᴇ ʙᴏᴛ sᴛᴀᴛᴜs</b>\n"
                 f"⏰ <b>ʟᴀsᴛ sʏɴᴄ:</b> <code>{now_ist} IST</code>\n"
