@@ -264,7 +264,7 @@ async def on_set_link(client, message):
         # Success Logic
         await update_user_settings(user_id, post_link=link)
         await refresh_monitor(user_id)
-        await progress.edit("✅ <b>sᴛᴀᴛᴜs ʟɪɴᴋ ᴠᴇʀɪғɪᴇᴅ & ᴜᴘᴅᴀᴛᴇᴅ!</b>\n<blockquote>ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ ᴘᴏsᴛ ᴡɪʟʟ ɴᴏᴡ ʙᴇ ᴜᴘᴅᴀᴛᴇᴅ ʟɪᴠᴇ.</blockquote>")</b>")
+        await progress.edit("✅ <b>sᴛᴀᴛᴜs ʟɪɴᴋ ᴠᴇʀɪғɪᴇᴅ & ᴜᴘᴅᴀᴛᴇᴅ!</b>\n<blockquote>ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ ᴘᴏsᴛ ᴡɪʟʟ ɴᴏᴡ ʙᴇ ᴜᴘᴅᴀᴛᴇᴅ ʟɪᴠᴇ.</blockquote>")
 
     except Exception as e:
         error_log = str(e)
