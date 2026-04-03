@@ -13,3 +13,5 @@ class Config:
     
     TIME_ZONE = "Asia/Kolkata"
     CHECK_INTERVAL = 1800 #30 min
+    DEFAULT_PING = 300  # 𝟻 𝙼𝚒𝚗𝚞𝚝𝚎𝚜
+    DEFAULT_MSG = 900   # 𝟷5 𝙼𝚒𝚗𝚞𝚝𝚎𝚜

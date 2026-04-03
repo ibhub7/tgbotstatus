@@ -44,16 +44,22 @@ async def get_user_config(user_id):
     return await users_settings.find_one({"user_id": user_id})
 
 async def get_user_config_web(user_id):
-    """Alias for dashboard routes """
     return await get_user_config(user_id)
 
-async def update_user_settings(user_id, interval=None, post_link=None):
+async def update_user_settings(user_id, ping_interval=None, msg_interval=None, post_link=None):
     data = {}
-    if interval is not None: data["interval"] = interval
+    if ping_interval is not None: data["ping_interval"] = ping_interval
+    if msg_interval is not None: data["msg_interval"] = msg_interval
     if post_link is not None: data["post_link"] = post_link
     await users_settings.update_one({"user_id": user_id}, {"$set": data}, upsert=True)
 
-# --- 𝚁𝙴𝙶𝙸𝚂𝚃𝙴𝚁𝙴𝙳 𝚄𝚂𝙴𝚁𝚂 ---
+async def reset_user_intervals(user_id):
+    """𝚁𝙴𝙼𝙾𝚅𝙴𝚂 𝙲𝚄𝚂𝚃𝙾𝙼 𝚃𝙸𝙼𝙸𝙽𝙶𝚂 𝚂𝙾 𝚂𝚈𝚂𝚃𝙴𝙼 𝚄𝚂𝙴𝚂 𝙲𝙾𝙽𝙵𝙸𝙶 𝙳𝙴𝙵𝙰𝚄𝙻𝚃𝚂"""
+    return await users_settings.update_one(
+        {"user_id": user_id}, 
+        {"$unset": {"ping_interval": "", "msg_interval": ""}}
+    )
+
 async def add_user(user_id):
     await registered_users.update_one({"user_id": user_id}, {"$set": {"user_id": user_id}}, upsert=True)
 
