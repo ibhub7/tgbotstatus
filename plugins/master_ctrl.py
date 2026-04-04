@@ -96,7 +96,7 @@ async def clone_db(client, message):
         await status.edit(f"❌ ᴇʀʀᴏʀ ᴅᴜʀɪɴɢ ᴄʟᴏɴᴇ: <code>{e}</code>")
 
 # --- ʙʀᴏᴀᴅᴄᴀꜱᴛ ꜱᴇʟᴇᴄᴛɪᴏɴ ᴍᴇɴᴜ ---
-@Client.on_message(filters.command("botscast") & filters.reply & filters.user(Config.OWNER_ID))
+@Client.on_message(filters.command("botcast") & filters.reply & filters.user(Config.OWNER_ID))
 async def botscast_menu(client, message):
     workers = await worker_bots.find({}).to_list(length=100)
     if not workers:
@@ -116,6 +116,15 @@ async def botscast_menu(client, message):
         "📢 <b>ᴍᴜʟᴛɪ-ʙᴏᴛ ʙʀᴏᴀᴅᴄᴀꜱᴛ</b>\n\nꜱᴇʟᴇᴄᴛ ᴀ ᴡᴏʀᴋᴇʀ ʙᴏᴛ ᴛᴏ ᴅᴇʟɪᴠᴇʀ ᴛʜɪꜱ ᴍᴇꜱꜱᴀɢᴇ:",
         reply_markup=InlineKeyboardMarkup(btns)
     )
+
+@Client.on_message(filters.command("purgedict") & filters.user(Config.OWNER_ID))
+async def purge_bot_dict(client, message):
+    if len(message.command) < 2:
+        return await message.reply("❌ ᴜꜱᴀɢᴇ: <code>/purgedict @username</code>")
+    
+    target = message.command[1].replace("@", "")
+    res = await broadcast_users.delete_many({"source": f"@{target}"})
+    await message.reply(f"🗑️ ᴘᴜʀɢᴇᴅ <code>{res.deleted_count}</code> ᴜꜱᴇʀꜱ ꜰʀᴏᴍ @{target} ᴅɪᴄᴛɪᴏɴᴀʀʏ.")
 
 # --- ʟɪꜱᴛ ᴀʟʟ ᴄᴏɴɴᴇᴄᴛᴇᴅ ᴡᴏʀᴋᴇʀꜱ ---
 @Client.on_message(filters.command("mybots") & filters.user(Config.OWNER_ID))
@@ -169,3 +178,17 @@ async def show_specific_bot_users(client, callback_query):
         await callback_query.message.reply_document(document=file, caption=f"📄 <b>ꜰᴜʟʟ ɪᴅ ʟɪꜱᴛ:</b> {bot_tag}")
 
     await callback_query.message.edit(id_text)
+
+@Client.on_message(filters.command("network") & filters.user(Config.OWNER_ID))
+async def network_stats(client, message):
+    total_bots = await worker_bots.count_documents({})
+    total_users = await broadcast_users.count_documents({})
+    unique_ids = len(await broadcast_users.distinct("user_id"))
+    
+    stats = (
+        "🌐 <b>ɢʟᴏʙᴀʟ ɴᴇᴛᴡᴏʀᴋ ꜱᴛᴀᴛꜱ</b>\n\n"
+        f"🤖 ᴛᴏᴛᴀʟ ᴡᴏʀᴋᴇʀꜱ: <code>{total_bots}</code>\n"
+        f"👥 ᴛᴏᴛᴀʟ ꜱᴀᴠᴇᴅ ɪᴅꜱ: <code>{total_users}</code>\n"
+        f"✨ ᴜɴɪQᴜᴇ ʀᴇᴀᴄʜ: <code>{unique_ids}</code>\n"
+    )
+    await message.reply(stats)

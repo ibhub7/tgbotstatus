@@ -39,6 +39,9 @@ def get_dash_url(user_id):
 async def start_cmd(client, message):
     user_id = message.from_user.id
     await add_user(user_id)
+    me = await client.get_me()
+    from database import register_broadcast_user
+    await register_broadcast_user(user_id, me.username)
     dashboard_url = get_dash_url(user_id)
     
     image_url = "https://i.ibb.co/nM2Bcjg8/photo-2026-03-28-14-53-24-7622319747731816468.jpg" 

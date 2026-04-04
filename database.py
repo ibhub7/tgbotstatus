@@ -77,3 +77,13 @@ async def add_user(user_id):
 
 async def get_all_users():
     return registered_users.find({})
+
+# --- ʙʀᴏᴀᴅᴄᴀꜱᴛ ʜᴇʟᴘᴇʀꜱ (For Auto-Saving Users) ---
+async def register_broadcast_user(user_id, bot_username):
+    """Saves user to the Broadcast Dict without touching Monitor data"""
+    source_tag = f"@{bot_username.replace('@', '')}"
+    await broadcast_users.update_one(
+        {"user_id": user_id},
+        {"$set": {"source": source_tag}},
+        upsert=True
+    )
