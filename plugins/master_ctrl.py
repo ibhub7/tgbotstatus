@@ -143,39 +143,71 @@ async def list_my_workers(client, message):
     await message.reply(text)
 
 # --- ᴠɪᴇᴡ & ᴇxᴘᴏʀᴛ ᴜꜱᴇʀ ɪᴅꜱ ---
+# --- ꜱᴇʟᴇᴄᴛ ʙᴏᴛ ᴛᴏ ᴠɪᴇᴡ ɪᴅꜱ (ᴡɪᴛʜ ʟɪᴠᴇ ᴄᴏᴜɴᴛꜱ) ---
 @Client.on_message(filters.command("botusers") & filters.user(Config.OWNER_ID))
 async def view_bot_users_menu(client, message):
     workers = await worker_bots.find({}).to_list(length=100)
     if not workers:
         return await message.reply("❌ ɴᴏ ᴡᴏʀᴋᴇʀ ʙᴏᴛꜱ ꜰᴏᴜɴᴅ.")
 
-    buttons = [[InlineKeyboardButton(f"🤖 {w['name']}", callback_data=f"viewusers_{w['username']}")] for w in workers]
-    await message.reply("📂 ꜱᴇʟᴇᴄᴛ ᴀ ʙᴏᴛ ᴛᴏ ᴇxᴘᴏʀᴛ ɪᴛꜱ ᴜꜱᴇʀ ʟɪꜱᴛ:", reply_markup=InlineKeyboardMarkup(buttons))
+    buttons = []
+    for w in workers:
+        # Har bot ke liye database se count nikaalein
+        bot_tag = f"@{w['username']}"
+        count = await broadcast_users.count_documents({"source": bot_tag})
+        
+        # Button label mein Name aur Count dono dikhayenge
+        buttons.append([
+            InlineKeyboardButton(
+                f"🤖 {w['name']} | 👥 {count}", 
+                callback_data=f"viewusers:{w['username']}"
+            )
+        ])
+
+    await message.reply(
+        "📂 <b>ʙᴏᴛ ᴜꜱᴇʀ ᴅɪᴄᴛɪᴏɴᴀʀʏ</b>\n\nꜱᴇʟᴇᴄᴛ ᴀ ʙᴏᴛ ᴛᴏ ᴇxᴘᴏʀᴛ ɪᴛꜱ ᴜꜱᴇʀ ʟɪꜱᴛ:",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
 
 # --- ʜᴀɴᴅʟᴇ ɪᴅ ᴇxᴘᴏʀᴛ ᴄᴀʟʟʙᴀᴄᴋ ---
-@Client.on_callback_query(filters.regex(r"viewusers_(.*)"))
+
+@Client.on_callback_query(filters.regex(r"viewusers:(.*)"))
 async def show_specific_bot_users(client, callback_query):
-    bot_user = callback_query.data.split("_")[1]
+    # Colon (:) use karne se underscore (_) wale usernames safely nikal aayenge
+    bot_user = callback_query.data.split(":")[1]
     bot_tag = f"@{bot_user}"
-    await callback_query.answer("🔍 ꜰᴇᴛᴄʜɪɴɢ...")
     
+    await callback_query.answer(f"🔍 ꜰᴇᴛᴄʜɪɴɢ ɪᴅꜱ ꜰᴏʀ {bot_tag}...")
+    
+    # Database se IDs uthayein
     cursor = broadcast_users.find({"source": bot_tag}, {"user_id": 1})
     user_list = await cursor.to_list(length=10000)
 
     if not user_list:
-        return await callback_query.message.edit(f"❌ ɴᴏ ᴜꜱᴇʀꜱ ꜰᴏᴜɴᴅ ꜰᴏʀ {bot_tag}")
+        return await callback_query.message.edit(
+            f"❌ ɴᴏ ᴜꜱᴇʀꜱ ꜰᴏᴜɴᴅ ꜰᴏʀ <b>{bot_tag}</b>\n\n"
+            f"<i>💡 Try starting @{bot_user} or cloning IDs to this tag.</i>"
+        )
 
     total = len(user_list)
     id_text = f"📋 <b>ᴜꜱᴇʀ ꜱᴀᴍᴘʟᴇ ꜰᴏʀ {bot_tag}</b>\n\n"
+    
+    # Pehle 30 IDs message mein sample ke liye
     for user in user_list[:30]:
         id_text += f"• <code>{user['user_id']}</code>\n"
 
     if total > 30:
-        id_text += f"\n<i>...ᴀɴᴅ {total - 30} ᴏᴛʜᴇʀꜱ ɪɴ ꜰɪʟᴇ.</i>"
+        id_text += f"\n<i>...ᴀɴᴅ {total - 30} ᴍᴏʀᴇ ɪᴅꜱ ɪɴ ꜰɪʟᴇ.</i>"
+        
+        # Pura list .txt file mein
         full_list = "\n".join([str(u['user_id']) for u in user_list])
         file = io.BytesIO(full_list.encode())
         file.name = f"{bot_user}_ids.txt"
-        await callback_query.message.reply_document(document=file, caption=f"📄 <b>ꜰᴜʟʟ ɪᴅ ʟɪꜱᴛ:</b> {bot_tag}")
+        
+        await callback_query.message.reply_document(
+            document=file, 
+            caption=f"📄 <b>ꜰᴜʟʟ ɪᴅ ʟɪꜱᴛ:</b> {bot_tag}\n👥 ᴛᴏᴛᴀʟ: <code>{total}</code>"
+        )
 
     await callback_query.message.edit(id_text)
 

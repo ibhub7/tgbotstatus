@@ -80,8 +80,9 @@ async def get_all_users():
 
 # --- ʙʀᴏᴀᴅᴄᴀꜱᴛ ʜᴇʟᴘᴇʀꜱ (For Auto-Saving Users) ---
 async def register_broadcast_user(user_id, bot_username):
-    """Saves user to the Broadcast Dict without touching Monitor data"""
-    source_tag = f"@{bot_username.replace('@', '')}"
+    # Username se '@' hata kar hamesha small letters mein save karein
+    clean_username = bot_username.replace("@", "").lower()
+    source_tag = f"@{clean_username}" 
     await broadcast_users.update_one(
         {"user_id": user_id},
         {"$set": {"source": source_tag}},
