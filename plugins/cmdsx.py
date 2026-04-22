@@ -27,7 +27,6 @@ async def set_commands(bot):
         BotCommand("stats", "📈 ᴠɪᴇᴡ ɢʟᴏʙᴀʟ ɴᴇᴛᴡᴏʀᴋ sᴛᴀᴛs"),
         BotCommand("restart", "🔄 ʀᴇsᴛᴀʀᴛ ᴛʜᴇ sʏsᴛᴇᴍ")
     ]
-    ]
     await bot.set_bot_commands(commands)
 
 @Client.on_message(filters.command("addcmds") & filters.user(Config.OWNER_ID))
