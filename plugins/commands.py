@@ -23,7 +23,8 @@ async def refresh_monitor(user_id):
         
         cfg = await get_user_config(user_id)
         if cfg:
-            inv, lnk = cfg.get('interval', 300), cfg.get('post_link')
+            inv, lnk = cfg.get('interval', 300),
+            cfg.get('post_link')
             active_tasks[user_id] = asyncio.create_task(monitor_user_task(user_id, inv, lnk))
             logger.info(f"Refreshed task for {user_id}")
     except Exception as e:
@@ -310,26 +311,32 @@ async def report_error_callback(client, callback_query):
 @Client.on_message(filters.command("help") & filters.private)
 async def help_cmd(client, message):
     help_text = (
-    "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜꜱᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
-    "🚀 <b>ǫᴜɪᴄᴋ ꜱᴇᴛᴜᴘ:</b>\n"
-    "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀꜱ ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
-    "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇꜱꜱᴀɢᴇ ʟɪɴᴋ ꜰʀᴏᴍ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ.\n"
-    "𝟹. ᴜꜱᴇ <code>/set_link</code> + ᴛʜᴀᴛ ʟɪɴᴋ.\n"
-    "𝟺. ᴜꜱᴇ <code>/addbot</code> @ᴜꜱᴇʀɴᴀᴍᴇ ᴜʀʟ.</blockquote>\n\n"
-    "📊 <b>ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅꜱ:</b>\n\n"
-    "• /addbot <code>@ᴜꜱᴇʀɴᴀᴍᴇ ᴜʀʟ</code> — ᴀᴅᴅ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏ ʟɪꜱᴛ\n"
-    "• /removebot <code>@ᴜꜱᴇʀɴᴀᴍᴇ</code> — ʀᴇᴍᴏᴠᴇ ᴀ ꜱᴘᴇᴄɪꜰɪᴄ ʙᴏᴛ\n"
-    "• /deleteall <code>confirm</code> — ᴘᴜʀɢᴇ ᴀʟʟ ʏᴏᴜʀ ᴀᴅᴅᴇᴅ ʙᴏᴛꜱ\n"
-    "• /list — ꜱʜᴏᴡ ᴀʟʟ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛꜱ ᴀɴᴅ ꜱᴛᴀᴛᴜꜱ\n"
-    "• /settings — ᴄᴏɴꜰɪɢᴜʀᴇ ᴘɪɴɢ & ᴜᴘᴅᴀᴛᴇ ɪɴᴛᴇʀᴠᴀʟꜱ\n"
-    "• /reset_settings — ʀᴇᴠᴇʀᴛ ᴛᴏ ꜱʏꜱᴛᴇᴍ ᴅᴇꜰᴀᴜʟᴛꜱ\n"
-    "• /dashboard — ɢᴇᴛ ʏᴏᴜʀ ꜱᴇᴄᴜʀᴇ ᴡᴇʙ ɪɴᴛᴇʀꜰᴀᴄᴇ ʟɪɴᴋ\n"
-    "• /id — ɢᴇᴛ ʏᴏᴜʀ ᴜꜱᴇʀ ɪᴅ ᴀɴᴅ ᴄᴜʀʀᴇɴᴛ ᴄʜᴀᴛ ɪᴅ\n"
-    "• /info <code>@ᴜꜱᴇʀ</code> — ᴠɪᴇᴡ ᴅᴇᴛᴀɪʟᴇᴅ ɪɴꜰᴏ ᴀʙᴏᴜᴛ ᴀ ᴜꜱᴇʀ\n"
-    "• /finfo (ʀᴇᴘʟʏ) — ɢᴇᴛ ꜱᴏᴜʀᴄᴇ ɪᴅ ᴏꜰ ꜰᴏʀᴡᴀʀᴅᴇᴅ ᴍꜱɢ\n"
-    "• /logs — ᴠɪᴇᴡ ꜱʏꜱᴛᴇᴍ ʟᴏɢꜱ (ᴏᴡɴᴇʀ ᴏɴʟʏ)\n"
-    "• /restart — ᴘᴇʀꜰᴏʀᴍ ᴀ ꜱᴀꜰᴇ ꜱʏꜱᴛᴇᴍ ʀᴇʙᴏᴏᴛ (ᴏᴡɴᴇʀ ᴏɴʟʏ)"
-)
+        "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜꜱᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
+        "🚀 <b>ǫᴜɪᴄᴋ ꜱᴇᴛᴜᴘ:</b>\n"
+        "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀꜱ ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
+        "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇꜱꜱᴀɢᴇ ʟɪɴᴋ ꜰʀᴏᴍ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ.\n"
+        "𝟹. ᴜꜱᴇ <code>/set_link</code> + ᴛʜᴀᴛ ʟɪɴᴋ.\n"
+        "𝟺. ᴜꜱᴇ <code>/addbot</code> @ᴜꜱᴇʀɴᴀᴍᴇ ᴜʀʟ.</blockquote>\n\n"
+        "📊 <b>ᴍᴏɴɪᴛᴏʀɪɴɢ ᴄᴏᴍᴍᴀɴᴅꜱ:</b>\n"
+        "• /addbot <code>@ᴜꜱᴇʀɴᴀᴍᴇ ᴜʀʟ</code> — ᴀᴅᴅ ʙᴏᴛ ᴛᴏ ʟɪꜱᴛ\n"
+        "• /removebot <code>@ᴜꜱᴇʀɴᴀᴍᴇ</code> — ʀᴇᴍᴏᴠᴇ ᴀ ʙᴏᴛ\n"
+        "• /list — sʜᴏᴡ ᴀʟʟ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛs\n"
+        "• /deleteall — ᴘᴜʀɢᴇ ʏᴏᴜʀ ᴇɴᴛɪʀᴇ ʟɪsᴛ\n\n"
+        "⚙️ <b>ᴄᴏɴꜰɪɢᴜʀᴀᴛɪᴏɴ:</b>\n"
+        "• /set_link — ʟɪɴᴋ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ sᴛᴀᴛᴜs ᴘᴏsᴛ\n"
+        "• /get_link — ᴠɪᴇᴡ ʏᴏᴜʀ ᴀᴄᴛɪᴠᴇ sᴛᴀᴛᴜs ʟɪɴᴋ\n"
+        "• /set_interval — ᴄʜᴀɴɢᴇ sᴄᴀɴ frequency (𝟸/𝟻 ᴍɪɴ)\n"
+        "• /settings — ᴄᴏɴꜰɪɢᴜʀᴇ ᴘɪɴɢ & ᴜᴘᴅᴀᴛᴇ ɪɴᴛᴇʀᴠᴀʟꜱ\n"
+        "• /reset_settings — ʀᴇᴠᴇʀᴛ ᴛᴏ sʏsᴛᴇᴍ ᴅᴇғᴀᴜʟᴛs\n"
+        "• /dashboard — ᴏᴘᴇɴ ʏᴏᴜʀ ᴡᴇʙ ɪɴᴛᴇʀғᴀᴄᴇ\n\n"
+        "🛠 <b>ᴜᴛɪʟɪᴛʏ & ᴀᴅᴍɪɴ:</b>\n"
+        "• /id — ɢᴇᴛ ʏᴏᴜʀ ᴜsᴇʀ ᴀɴᴅ ᴄʜᴀᴛ ɪᴅ\n"
+        "• /info — ᴠɪᴇᴡ ᴅᴇᴛᴀɪʟᴇᴅ ᴜsᴇʀ profile\n"
+        "• /finfo — ᴛʀᴀᴄᴇ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍsɢ sᴏᴜʀᴄᴇ\n"
+        "• /stats — ɢʟᴏʙᴀʟ sʏsᴛᴇᴍ sᴛᴀᴛɪsᴛɪᴄs (ᴀᴅᴍɪɴ)\n"
+        "• /logs — ᴠɪᴇᴡ sʏsᴛᴇᴍ ʟᴏɢs (ᴏᴡɴᴇʀ)\n"
+        "• /restart — sᴀғᴇʟʏ ʀᴇʙᴏᴏᴛ sᴇʀᴠɪᴄᴇ (ᴏᴡɴᴇʀ)"
+    )
     await message.reply(
         help_text, 
         parse_mode=enums.ParseMode.HTML, 
@@ -399,26 +406,30 @@ async def status_handler(client, message):
 @Client.on_callback_query(filters.regex("show_help"))
 async def show_help_cb(client, callback_query):
     help_text = (
-    "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴜꜱᴇʀ ᴍᴀɴᴜᴀʟ</b>\n\n"
-    "🚀 <b>ǫᴜɪᴄᴋ ꜱᴇᴛᴜᴘ:</b>\n"
-    "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀꜱ ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
-    "𝟸. ᴄᴏᴘʏ ᴀ ᴍᴇꜱꜱᴀɢᴇ ʟɪɴᴋ ꜰʀᴏᴍ ᴛʜᴀᴛ ᴄʜᴀɴɴᴇʟ.\n"
-    "𝟹. ᴜꜱᴇ <code>/set_link</code> + ᴛʜᴀᴛ ʟɪɴᴋ.\n"
-    "𝟺. ᴜꜱᴇ <code>/addbot</code> @ᴜꜱᴇʀɴᴀᴍᴇ ᴜʀʟ.</blockquote>\n\n"
-    "📊 <b>ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅꜱ:</b>\n\n"
-    "• /addbot <code>@ᴜꜱᴇʀɴᴀᴍᴇ ᴜʀʟ</code> — ᴀᴅᴅ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏ ʟɪꜱᴛ\n"
-    "• /removebot <code>@ᴜꜱᴇʀɴᴀᴍᴇ</code> — ʀᴇᴍᴏᴠᴇ ᴀ ꜱᴘᴇᴄɪꜰɪᴄ ʙᴏᴛ\n"
-    "• /deleteall <code>confirm</code> — ᴘᴜʀɢᴇ ᴀʟʟ ʏᴏᴜʀ ᴀᴅᴅᴇᴅ ʙᴏᴛꜱ\n"
-    "• /list — ꜱʜᴏᴡ ᴀʟʟ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛꜱ ᴀɴᴅ ꜱᴛᴀᴛᴜꜱ\n"
-    "• /settings — ᴄᴏɴꜰɪɢᴜʀᴇ ᴘɪɴɢ & ᴜᴘᴅᴀᴛᴇ ɪɴᴛᴇʀᴠᴀʟꜱ\n"
-    "• /reset_settings — ʀᴇᴠᴇʀᴛ ᴛᴏ ꜱʏꜱᴛᴇᴍ ᴅᴇꜰᴀᴜʟᴛꜱ\n"
-    "• /dashboard — ɢᴇᴛ ʏᴏᴜʀ ꜱᴇᴄᴜʀᴇ ᴡᴇʙ ɪɴᴛᴇʀꜰᴀᴄᴇ ʟɪɴᴋ\n"
-    "• /id — ɢᴇᴛ ʏᴏᴜʀ ᴜꜱᴇʀ ɪᴅ ᴀɴᴅ ᴄᴜʀʀᴇɴᴛ ᴄʜᴀᴛ ɪᴅ\n"
-    "• /info <code>@ᴜꜱᴇʀ</code> — ᴠɪᴇᴡ ᴅᴇᴛᴀɪʟᴇᴅ ɪɴꜰᴏ ᴀʙᴏᴜᴛ ᴀ ᴜꜱᴇʀ\n"
-    "• /finfo (ʀᴇᴘʟʏ) — ɢᴇᴛ ꜱᴏᴜʀᴄᴇ ɪᴅ ᴏꜰ ꜰᴏʀᴡᴀʀᴅᴇᴅ ᴍꜱɢ\n"
-    "• /logs — ᴠɪᴇᴡ ꜱʏꜱᴛᴇᴍ ʟᴏɢꜱ (ᴏᴡɴᴇʀ ᴏɴʟʏ)\n"
-    "• /restart — ᴘᴇʀꜰᴏʀᴍ ᴀ ꜱᴀꜰᴇ ꜱʏꜱᴛᴇᴍ ʀᴇʙᴏᴏᴛ (ᴏᴡɴᴇʀ ᴏɴʟʏ)"
-)
+        "📖 <b>ʙᴏᴛ ᴍᴏɴɪᴛᴏʀ ᴘʀᴏ - ᴍᴀɴᴜᴀʟ</b>\n\n"
+        "🚀 <b>ǫᴜɪᴄᴋ sᴇᴛᴜᴘ:</b>\n"
+        "<blockquote>𝟷. ᴀᴅᴅ ʙᴏᴛ ᴀs ᴀᴅᴍɪɴ ɪɴ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ.\n"
+        "𝟸. ᴜsᴇ <code>/set_link</code> [ᴍsɢ_ʟɪɴᴋ] ᴛᴏ ᴄᴏɴғɪɢ.\n"
+        "𝟹. ᴜsᴇ <code>/addbot</code> @ᴜsᴇʀɴᴀᴍᴇ ᴜʀʟ.</blockquote>\n\n"
+        "📊 <b>ᴍᴏɴɪᴛᴏʀɪɴɢ ᴄᴏᴍᴍᴀɴᴅs:</b>\n"
+        "• /addbot — ᴀᴅᴅ ᴀ ɴᴇᴡ ʙᴏᴛ ᴛᴏ ʟɪsᴛ\n"
+        "• /removebot — ʀᴇᴍᴏᴠᴇ ᴀ sᴘᴇᴄɪғɪᴄ ʙᴏᴛ\n"
+        "• /list — sʜᴏᴡ ᴀʟʟ ᴍᴏɴɪᴛᴏʀᴇᴅ ʙᴏᴛs\n"
+        "• /deleteall — ᴘᴜʀɢᴇ ʏᴏᴜʀ ᴇɴᴛɪʀᴇ ʟɪsᴛ\n\n"
+        "⚙️ <b>ᴄᴏɴғɪɢᴜʀᴀᴛɪᴏɴ:</b>\n"
+        "• /set_link — ʟɪɴᴋ ʏᴏᴜʀ ᴄʜᴀɴɴᴇʟ sᴛᴀᴛᴜs ᴘᴏsᴛ\n"
+        "• /get_link — ᴠɪᴇᴡ ʏᴏᴜʀ ᴀᴄᴛɪᴠᴇ sᴛᴀᴛᴜs ʟɪɴᴋ\n"
+        "• /set_interval — ᴄʜᴀɴɢᴇ sᴄᴀɴ frequency (𝟸/𝟻 ᴍɪɴ)\n"
+        "• /dashboard — ᴏᴘᴇɴ ʏᴏᴜʀ ᴡᴇʙ ɪɴᴛᴇʀғᴀᴄᴇ\n\n"
+        "🛠 <b>ᴜᴛɪʟɪᴛʏ:</b>\n"
+        "• /id — ɢᴇᴛ ʏᴏᴜʀ ᴜsᴇʀ ᴀɴᴅ ᴄʜᴀᴛ ɪᴅ\n"
+        "• /info — ᴠɪᴇᴡ ᴅᴇᴛᴀɪʟᴇᴅ ᴜsᴇʀ profile\n"
+        "• /finfo — ᴛʀᴀᴄᴇ ғᴏʀᴡᴀʀᴅᴇᴅ ᴍsɢ sᴏᴜʀᴄᴇ\n\n"
+        "👑 <b>ᴀᴅᴍɪɴ ᴏɴʟʏ:</b>\n"
+        "• /stats — ɢʟᴏʙᴀʟ sʏsᴛᴇᴍ sᴛᴀᴛɪsᴛɪᴄs\n"
+        "• /logs — ᴅᴏᴡɴʟᴏᴀᴅ sʏsᴛᴇᴍ ʟᴏɢ ғɪʟᴇ\n"
+        "• /restart — sᴀғᴇʟʏ ʀᴇʙᴏᴏᴛ sᴇʀᴠɪᴄᴇ"
+    )
 
     await callback_query.message.edit_text(
         help_text,
@@ -502,6 +513,22 @@ async def send_msg_cmd(client, message):
         
     except Exception as e:
         await message.reply(f"❌ <b>ғᴀɪʟᴇᴅ ᴛᴏ sᴇɴᴅ:</b>\n<code>{e}</code>")
+
+@Client.on_message(filters.command("get_link") & filters.private)
+async def get_link_cmd(client, message):
+    user_id = message.from_user.id
+    cfg = await get_user_config(user_id) # Fetches from users_settings collection
+    
+    link = cfg.get('post_link') if cfg else None
+    
+    if link:
+        await message.reply(
+            "🔗 <b>ʏᴏᴜʀ ᴄᴜʀʀᴇɴᴛ sᴛᴀᴛᴜs ʟɪɴᴋ</b>\n\n"
+            f"<blockquote><code>{link}</code></blockquote>",
+            disable_web_page_preview=True
+        )
+    else:
+        await message.reply("⚠️ <b>ɴᴏ ʟɪɴᴋ sᴇᴛ!</b>\nᴜsᴇ <code>/set_link</code> ᴛᴏ ᴀᴅᴅ ᴏɴᴇ.")
 
 # --- 𝚁𝙴𝙿𝙻𝚈 𝙱𝚈 𝚁𝙴𝙿𝙻𝚈𝙸𝙽𝙶 (𝙰𝚄𝚃𝙾-𝚁𝙴𝙿𝙻𝚈 𝚂𝚈𝚂𝚃𝙴𝙼) ---
 @Client.on_message(filters.user(Config.OWNER_ID) & filters.reply & filters.private)
