@@ -447,19 +447,19 @@ async def stats_cmd(client, message):
     try:
         total_users = await registered_users.count_documents({})
         total_bots = await bots_col.count_documents({})
-        online_bots = await bots_col.count_documents({"status": {"$regex": "Online"}})
+        online_bots = await bots_col.count_documents({"status": {"$regex": "✅"}})
         offline_bots = total_bots - online_bots
         unique_bot_users = len(await bots_col.distinct("user_id"))
 
         text = (
             "📊 <b>ʙᴏᴛ sᴛᴀᴛs ᴅᴀsʜʙᴏᴀʀᴅ</b>\n\n"
-            f"<blockquote>"
+            "<blockquote>"
             f"👥 ᴛᴏᴛᴀʟ ᴜsᴇʀs: <b>{total_users}</b>\n"
             f"🧑‍💻 ᴀᴄᴛɪᴠᴇ ᴜsᴇʀs: <b>{unique_bot_users}</b>\n\n"
             f"🤖 ᴛᴏᴛᴀʟ ʙᴏᴛs: <b>{total_bots}</b>\n"
             f"🟢 ᴏɴʟɪɴᴇ: <b>{online_bots}</b>\n"
             f"🔴 ᴏғғʟɪɴᴇ: <b>{offline_bots}</b>"
-            f"</blockquote>"
+            "</blockquote>"
         )
 
         await message.reply(
@@ -467,7 +467,7 @@ async def stats_cmd(client, message):
             parse_mode=enums.ParseMode.HTML
         )
     except Exception as e:
-        await message.reply(f"❌ Error: <code>{e}</code>")
+        await message.reply(f"❌ <b>ᴇʀʀᴏʀ:</b> <code>{e}</code>")
 
 # --- 𝚁𝙴𝚂𝚃𝙰𝚁𝚃 𝙲𝙾𝙼𝙼𝙰𝙽𝙳 (𝙾𝚆𝙽𝙴𝚁 𝙾𝙽𝙻𝚈) ---
 @Client.on_message(filters.command("restart") & filters.user(Config.OWNER_ID))
@@ -524,7 +524,7 @@ async def get_link_cmd(client, message):
     if link:
         await message.reply(
             "🔗 <b>ʏᴏᴜʀ ᴄᴜʀʀᴇɴᴛ sᴛᴀᴛᴜs ʟɪɴᴋ</b>\n\n"
-            f"<blockquote><code>{link}</code></blockquote>",
+            f"<blockquote>{link}</blockquote>",
             disable_web_page_preview=True
         )
     else:
