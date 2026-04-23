@@ -32,7 +32,10 @@ async def set_commands(bot):
 @Client.on_message(filters.command("addcmds") & filters.user(Config.OWNER_ID))
 async def add_cmds_handler(client, message):
     try:
-        await set_commands(client)
-        await message.reply("✅ **ʙᴏᴛ ᴄᴏᴍᴍᴀɴᴅs ᴜᴘᴅᴀᴛᴇᴅ!**\n\n<blockquote>ᴀʟʟ {len(commands)} ᴄᴏᴍᴍᴀɴᴅs ʜᴀᴠᴇ ʙᴇᴇɴ ʀᴇɢɪsᴛᴇʀᴇᴅ. ɪғ ᴛʜᴇʏ ᴅᴏɴ'ᴛ ᴀᴘᴘᴇᴀʀ, ʀᴇsᴛᴀʀᴛ ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴘᴘ.</blockquote>")
+        count = await set_commands(client)
+        await message.reply(
+            f"✅ <b>ʙᴏᴛ ᴄᴏᴍᴍᴀɴᴅs ᴜᴘᴅᴀᴛᴇᴅ!</b>\n\n"
+            f"<blockquote>ᴀʟʟ {count} ᴄᴏᴍᴍᴀɴᴅs ʜᴀᴠᴇ ʙᴇᴇɴ ʀᴇɢɪsᴛᴇʀᴇᴅ. ɪғ ᴛʜᴇʏ ᴅᴏɴ'ᴛ ᴀᴘᴘᴇᴀʀ, ʀᴇsᴛᴀʀᴛ ʏᴏᴜʀ ᴛᴇʟᴇɢʀᴀᴍ ᴀᴘᴘ.</blockquote>"
+        )
     except Exception as e:
-        await message.reply(f"❌ **ᴇʀʀᴏʀ:** <code>{e}</code>")
+        await message.reply(f"❌ <b>ᴇʀʀᴏʀ:</b> <code>{e}</code>")
